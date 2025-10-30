@@ -1,7 +1,13 @@
 <!doctype html>
 <meta charset="utf-8">
 <title>PM Tab Broker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:,">
-<style>body{font:14px system-ui,sans-serif;margin:10px}</style>
+<style>
+  body { font: 14px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 10px; }
+  code { background:#f2f2f2; padding:2px 4px; }
+</style>
+<b>Pokemon Manager – Tab Broker</b>
 <div id="s">ready</div>
-<script src="/static/pm-broker.js" defer></script>
+<p>Listens for <code>postMessage</code> from poromagia.com and opens named windows <code>MCMWindow</code>, <code>TCGWindow</code>.</p>
+<script src="pm-broker.js" defer></script>
