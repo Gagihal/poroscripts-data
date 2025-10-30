@@ -99,19 +99,19 @@
   "Sword & Shield Silver Tempest": "SIT",
   "Crown Zenith": "CRZ",
   "Scarlet & Violet": "SVI",
-  "Journey Together": "JTG",
-  "Prismatic Evolutions": "PRE",
-  "Prismatic Evolutions: Additionals": "xPRE",
-  "Paldea Evolved": "PAE",
-  "Obsidian Flames": "OBF",
-  "Shrouded Fable": "SFA",
-  "Stellar Crown": "SCR",
-  "Surging Sparks": "SSP",
-  "Temporal Forces": "TEF",
-  "Paldean Fates": "PAF",
-  "Paradox Rift": "PAR",
-  "Twilight Masquerade": "TWM",
-  "Generations": "GEN",
+  "Scarlet & Violet Journey Together": "JTG",
+  "Scarlet & Violet Prismatic Evolutions": "PRE",
+  "Scarlet & Violet Prismatic Evolutions: Additionals": "xPRE",
+  "Scarlet & Violet Paldea Evolved": "PAE",
+  "Scarlet & Violet Obsidian Flames": "OBF",
+  "Scarlet & Violet Shrouded Fable": "SFA",
+  "Scarlet & Violet Stellar Crown": "SCR",
+  "Scarlet & Violet Surging Sparks": "SSP",
+  "Scarlet & Violet Temporal Forces": "TEF",
+  "Scarlet & Violet Paldean Fates": "PAF",
+  "Scarlet & Violet Paradox Rift": "PAR",
+  "Scarlet & Violet Twilight Masquerade": "TWM",
+  "Scarlet & Violet Generations": "GEN",
   "POP Series 1": "POP1",
   "POP Series 2": "POP2",
   "POP Series 3": "POP3",
@@ -130,8 +130,13 @@
   "Mega Evolution": "MEG",
   "Mega Evolution: Additionals": "xMEG",
   "Scarlet & Violet Black Bolt": "BLK",
-  "Scarlet & Violet Black Bolt: Additionals": "xBLK"
+  "Scarlet & Violet Black Bolt: Additionals": "xBLK",
+  "Scarlet & Violet White Flare": "WHT",
+  "Scarlet & Violet White Flare: Additionals": "xWHT",
+  "Scarlet & Violet Destined Rivals": "DRI",
+  "Scarlet & Violet Destined Rivals: Additionals": "xDRI"
 }
+
 
 
 
