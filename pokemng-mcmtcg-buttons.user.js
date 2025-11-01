@@ -4,9 +4,9 @@
 // @version      2.4
 // @description  Adds MCM and TCG buttons; reuses persistent named tabs across manager windows (via shared utils).
 // @match        https://poromagia.com/store_manager/pokemon/*
-// @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
-// @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng-mcmtcg-buttons.user.js
-// @downloadURL  https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng-mcmtcg-buttons.user.js
+// @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/v2.4/poro-search-utils.js
+// @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/v2.4/pokemng-mcmtcg-buttons.user.js
+// @downloadURL  https://raw.githubusercontent.com/Gagihal/poroscripts-data/v2.4/pokemng-mcmtcg-buttons.user.js
 // @connect      raw.githubusercontent.com
 // @grant        none
 // ==/UserScript==

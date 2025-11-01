@@ -1,4 +1,4 @@
-// poro-search-utils.js  v1.1.1
+// poro-search-utils.js  v1.2.0
 ;(function (root) {
   'use strict';
 
@@ -57,12 +57,11 @@
   }
 
   function openNamed(url, name) {
-    // Try to open/reuse a named window
-    let w = window.open(url, name);
-    if (w) {
-      try { w.focus(); } catch {}
-    }
-    // If blocked, user will need to allow popups
+    let w = window.open('', name);
+    if (!w || w.closed) w = window.open('about:blank', name);
+    if (!w) return; // popup blocked
+    try { w.location.replace(url); w.focus(); }
+    catch { window.open(url, name); }
   }
 
   // ---------- set-abbreviation map cache ----------
@@ -188,7 +187,7 @@
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.1.1'
+    version: '1.2.0'
   };
 
   root.PoroSearch = api;
