@@ -2,9 +2,13 @@
 // ==UserScript==
 // @name         Cardmarket → Quick Links for Pokemon Sellers (TCGP + PM)
 // @namespace    cm-links
-// @version      0.6
-// @description  Adds TCGP and PM buttons next to each card name on a sellefor Pokemon Sellers r's Singles page
+// @version      0.7
+// @description  Adds TCGP and PM buttons next to each card name on a seller's Singles page
 // @match        https://www.cardmarket.com/*/Pokemon/Users/*/Offers/Singles*
+// @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
+// @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/mcm-pkseller-mcmtcg-buttons.user.js
+// @downloadURL  https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/mcm-pkseller-mcmtcg-buttons.user.js
+// @connect      raw.githubusercontent.com
 // @run-at       document-idle
 // @grant        none
 // ==/UserScript==
@@ -18,16 +22,6 @@
     const PM_BASE =
         "https://poromagia.com/store_manager/pokemon/?";
 
-    // "Dusclops  (PK 14)" → "Dusclops"
-    // "Altaria ex δ Delta Species  (DF 90)" → "Altaria ex δ Delta Species"
-    function extractCardName(fullText) {
-        if (!fullText) return "";
-        const t = fullText.trim().replace(/\s+/g, " ");
-        const idx = t.indexOf("(");
-        if (idx === -1) return t;
-        return t.slice(0, idx).trim();
-    }
-
     // Pull cardName, setName, and the anchor so we know where to inject
     function getRowData(row) {
         const nameAnchor = row.querySelector(
@@ -36,7 +30,12 @@
         if (!nameAnchor) return null;
 
         const fullNameText = nameAnchor.textContent || "";
-        const cardName = extractCardName(fullNameText);
+        // "Dusclops  (PK 14)" → extract name before parens, then split and sanitize
+        const beforeParen = fullNameText.indexOf("(") !== -1
+            ? fullNameText.slice(0, fullNameText.indexOf("(")).trim()
+            : fullNameText.trim();
+        const { name } = PoroSearch.splitNameNum(beforeParen);
+        const cardName = PoroSearch.sanitize(name);
 
         const setAnchor = row.querySelector(
             ".product-attributes a.expansion-symbol[title]"
@@ -47,8 +46,8 @@
     }
 
     function buildTcgplayerUrl(cardName, setName) {
-        const q = `${cardName} ${setName}`.trim();
-        return TCGP_BASE + encodeURIComponent(q);
+        const tcgQ = PoroSearch.buildTcgQuery({ name: cardName, setFull: setName });
+        return TCGP_BASE + encodeURIComponent(tcgQ);
     }
 
     function buildPmUrl(cardName, setName) {
@@ -99,11 +98,11 @@
         const pmUrl   = buildPmUrl(cardName, setName);
 
         const tcgpBtn = makeButton("TCGP", () => {
-            window.open(tcgpUrl, "TCGPWindow");
+            PoroSearch.openNamed(tcgpUrl, "TCGPWindow");
         });
 
         const pmBtn = makeButton("PM", () => {
-            window.open(pmUrl, "PMWindow");
+            PoroSearch.openNamed(pmUrl, "PMWindow");
         });
 
         // insert both after the card name link
