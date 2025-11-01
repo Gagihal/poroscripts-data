@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pokemon Creditor list — tiny T/M buttons (with MCM set-abbrev)
 // @namespace    poroscripts
-// @version      1.1
+// @version      1.2
 // @description  Add compact T (TCGplayer) and M (MCM) buttons after Condition on the creditor list, using shared search utilities.
 // @match        https://poromagia.com/en/admin/pokemon/creditorderitem/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
@@ -90,13 +90,15 @@
 
       const { tcgQ, mcmQ, mcmBackupQ } = await buildQueries(row);
 
-      const tBtn = makeBtn('T','Search on TCGplayer', ()=>{
+      const tBtn = makeBtn('T','Search on TCGplayer', (e)=>{
+        e.preventDefault();
         const url = 'https://www.tcgplayer.com/search/pokemon/product?Language=English&ProductTypeName=Cards&productLineName=pokemon&q='
           + encodeURIComponent(tcgQ) + '&view=grid';
         PoroSearch.openNamed(url, 'TCGWindow');
       });
 
       const mBtn = makeBtn('M','Search on Cardmarket (Alt = backup)', (e)=>{
+        e.preventDefault();
         const q = e.altKey ? mcmBackupQ : mcmQ;
         const url = 'https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=' + encodeURIComponent(q);
         PoroSearch.openNamed(url, 'MCMWindow');
