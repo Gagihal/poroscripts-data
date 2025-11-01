@@ -1,9 +1,12 @@
 // ==UserScript==
-// @name         Pokemon Manager – Cart tools (add + inline viewer) v1.0
-// @namespace    http://tampermonkey.net/
-// @version      1.0
+// @name         Pokemon Manager – Cart tools (add + inline viewer)
+// @namespace    poroscripts
+// @version      1.1
 // @description  Adds per-row "Add to cart" and a "Show Cart" inline viewer.
 // @match        https://poromagia.com/store_manager/pokemon/*
+// @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng-cart.user.js
+// @downloadURL  https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng-cart.user.js
+// @connect      raw.githubusercontent.com
 // @grant        none
 // ==/UserScript==
 
