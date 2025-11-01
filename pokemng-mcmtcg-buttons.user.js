@@ -4,12 +4,22 @@
 // @version      2.1
 // @description  Adds MCM and TCG buttons; reuses persistent named tabs across manager windows (via shared utils).
 // @match        https://poromagia.com/store_manager/pokemon/*
+
+// Utils pinned to a specific commit (stable):
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/020177da9df6fbe879ba2039a0fa9d7863ac309c/poro-search-utils.js
-// @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/80bd78e699b270a1347ad79ee6dc9cc8a4fd65f6/pokemng-mcmtcg-buttons.user.js
-// @downloadURL  https://raw.githubusercontent.com/Gagihal/poroscripts-data/80bd78e699b270a1347ad79ee6dc9cc8a4fd65f6/pokemng-mcmtcg-buttons.user.js
+
+
+// Main script auto-updates via release tag:
+/// (these two MUST point to THIS .user.js at the same tag)
+// @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/v2.1/pokemng-mcmtcg-buttons.user.js
+// @downloadURL  https://raw.githubusercontent.com/Gagihal/poroscripts-data/v2.1/pokemng-mcmtcg-buttons.user.js
+
+// Needed because utils fetch the map from GitHub Raw
 // @connect      raw.githubusercontent.com
 // @grant        none
 // ==/UserScript==
+
+
 
 
 
