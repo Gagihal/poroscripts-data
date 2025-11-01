@@ -6,7 +6,7 @@
 // @match        https://poromagia.com/store_manager/pokemon/*
 
 // Utils pinned to a specific commit (stable):
-// @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/020177da9df6fbe879ba2039a0fa9d7863ac309c/poro-search-utils.js
+// @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/v2.2/poro-search-utils.js
 
 
 // Main script auto-updates via release tag:
