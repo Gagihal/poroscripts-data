@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pokemon Creditor list — tiny T/M buttons (with MCM set-abbrev)
 // @namespace    poroscripts
-// @version      1.4
+// @version      1.5
 // @description  Add compact T (TCGplayer) and M (MCM) buttons after Condition on the creditor list, using shared search utilities.
 // @match        https://poromagia.com/en/admin/pokemon/creditorderitem/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
@@ -13,6 +13,10 @@
 
 (async function () {
   'use strict';
+
+  console.log('[Pokecreditor v1.5] Script started');
+  console.log('[Pokecreditor] PoroSearch available?', typeof PoroSearch);
+  console.log('[Pokecreditor] Current URL:', window.location.href);
 
   /* ---------- UI styles ---------- */
   (function injectStyles(){
@@ -34,15 +38,19 @@
     return new Promise((resolve) => {
       const check = () => {
         const table = document.querySelector('#result_list');
+        console.log('[Pokecreditor] Checking for table... found:', !!table, 'has tbody:', !!(table && table.tBodies[0]));
         if (table && table.tBodies[0]) {
+          console.log('[Pokecreditor] Table found! Starting enhancement...');
           resolve(table);
         } else {
           requestAnimationFrame(check);
         }
       };
       if (document.readyState === 'loading') {
+        console.log('[Pokecreditor] DOM still loading, waiting for DOMContentLoaded...');
         document.addEventListener('DOMContentLoaded', check);
       } else {
+        console.log('[Pokecreditor] DOM already loaded, checking now...');
         check();
       }
     });
@@ -50,6 +58,7 @@
 
   /* ---------- main ---------- */
   const table = await waitForTable();
+  console.log('[Pokecreditor] Table ready, rows found:', table.querySelectorAll('tbody > tr').length);
 
   function parseSetAndNum(row){
     // name from first column
@@ -91,11 +100,18 @@
   }
 
   async function enhance(){
-    for (const row of table.querySelectorAll('tbody > tr')){
+    const rows = table.querySelectorAll('tbody > tr');
+    console.log('[Pokecreditor] enhance() called, processing', rows.length, 'rows');
+
+    for (const row of rows){
       if (row._pmTinyDone) continue;
 
       const condCell = row.querySelector('td.field-condition');
-      if (!condCell) continue;
+      if (!condCell) {
+        console.log('[Pokecreditor] Row skipped - no field-condition cell found');
+        continue;
+      }
+      console.log('[Pokecreditor] Processing row, found condition cell');
 
       const allTds = Array.from(row.children);
       const condIdx = allTds.indexOf(condCell);
@@ -124,7 +140,9 @@
 
       holder.append(tBtn, mBtn);
       row._pmTinyDone = true;
+      console.log('[Pokecreditor] Buttons added to row successfully');
     }
+    console.log('[Pokecreditor] enhance() completed');
   }
 
   let enhancing = false;
