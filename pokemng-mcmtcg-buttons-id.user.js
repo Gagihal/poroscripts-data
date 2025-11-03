@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — MCM/TCG buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      3.0
+// @version      3.1
 // @description  Adds MCM and TCG buttons using direct product ID links for MCM (with search fallback); reuses persistent named tabs.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js

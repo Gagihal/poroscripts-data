@@ -1,4 +1,4 @@
-// poro-search-utils.js  v1.3.0
+// poro-search-utils.js  v1.3.1
 ;(function (root) {
   'use strict';
 
@@ -274,7 +274,7 @@
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.3.0'
+    version: '1.3.1'
   };
 
   root.PoroSearch = api;
