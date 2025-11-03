@@ -59,9 +59,8 @@
       const nameCell = row.querySelector('td.name');
       const setCell  = row.querySelector('td:nth-child(6)');
       const idCell   = row.querySelector('td:nth-child(4)');
-      // Card ID is in the second-to-last column (last column is the + button)
-      const allCells = row.querySelectorAll('td');
-      const cardIdCell = allCells.length > 1 ? allCells[allCells.length - 2] : null;
+      // Card ID is in the cell with link-product-card link
+      const cardIdCell = row.querySelector('td a[href*="link-product-card"]')?.parentElement;
       if (!nameCell || !setCell || !idCell || !cardIdCell) { row._pmMcmTcgDone = true; continue; }
 
       const rawName = nameCell.textContent || '';
