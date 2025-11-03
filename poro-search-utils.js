@@ -1,4 +1,4 @@
-// poro-search-utils.js  v1.2.0
+// poro-search-utils.js  v1.3.0
 ;(function (root) {
   'use strict';
 
@@ -7,6 +7,12 @@
   const LS_KEY = 'poro_mcm_setabbr_map_v1';
   const LS_TS  = 'poro_mcm_setabbr_map_ts_v1';
   const CACHE_MS = 24 * 3600 * 1000; // 24h
+
+  // Product ID mapping
+  let IDMAP_URL = 'https://raw.githubusercontent.com/gagihal/poroscripts-data/main/product-id-map.json';
+  const IDMAP_LS_KEY = 'poro_product_id_map_v1';
+  const IDMAP_LS_TS  = 'poro_product_id_map_ts_v1';
+  const IDMAP_CACHE_MS = 7 * 24 * 3600 * 1000; // 7 days (IDs change less frequently)
 
   // ---------- small helpers ----------
   const IGNORE = new Set(['full','art','secret','rare','hyper','alternative','alternate','reverse','holo','bs']);
@@ -178,16 +184,95 @@
   }
   async function preloadAbbrMap() { await getAbbrMap(); }
 
+  // ---------- product ID mapping cache ----------
+  let _idMap = null;
+  let _idMapTs = 0;
+
+  function _readIdMapLS() {
+    try {
+      const ts = parseInt(localStorage.getItem(IDMAP_LS_TS) || '0', 10);
+      if (!ts || Date.now() - ts > IDMAP_CACHE_MS) return null;
+      const raw = localStorage.getItem(IDMAP_LS_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return parsed;
+    } catch {}
+    return null;
+  }
+
+  function _writeIdMapLS(map) {
+    try {
+      localStorage.setItem(IDMAP_LS_KEY, JSON.stringify(map || {}));
+      localStorage.setItem(IDMAP_LS_TS, String(Date.now()));
+    } catch {}
+  }
+
+  async function _fetchIdMap() {
+    const r = await fetch(IDMAP_URL, { mode: 'cors' });
+    if (!r.ok) throw new Error(`ID map fetch ${r.status}`);
+    return await r.json();
+  }
+
+  async function getIdMap() {
+    // memory cache valid?
+    if (_idMap && (Date.now() - _idMapTs) < IDMAP_CACHE_MS) return _idMap;
+
+    // try localStorage cache
+    const cached = _readIdMapLS();
+    if (cached) {
+      _idMap = cached; _idMapTs = Date.now();
+      return _idMap;
+    }
+
+    // fetch fresh
+    try {
+      const fresh = await _fetchIdMap();
+      _idMap = fresh; _idMapTs = Date.now();
+      _writeIdMapLS(fresh);
+      return _idMap;
+    } catch (e) {
+      console.error('[PoroSearch] ID map load failed:', e);
+      _idMap = _idMap || {};
+      return _idMap;
+    }
+  }
+
+  /**
+   * Get MCM product ID from PoroId.
+   * @param {string|number} poroId
+   * @returns {Promise<string|null>} MCM product ID or null if not found
+   */
+  async function getMcmId(poroId) {
+    const map = await getIdMap();
+    return map[String(poroId)] || null;
+  }
+
+  /**
+   * Build direct MCM product URL from PoroId, or null if not in mapping.
+   * @param {string|number} poroId
+   * @returns {Promise<string|null>}
+   */
+  async function buildMcmDirectUrl(poroId) {
+    const mcmId = await getMcmId(poroId);
+    if (!mcmId) return null;
+    return `https://www.cardmarket.com/Pokemon/Products?idProduct=${mcmId}`;
+  }
+
+  async function preloadIdMap() { await getIdMap(); }
+  function setIdMapUrl(url) { if (url) IDMAP_URL = String(url); }
+
   // ---------- export ----------
   const api = {
     // utils
     sanitize, splitNameNum, firstNum, normalizeSetKey, fixDelta, openNamed,
     // builders
     buildMcmQuery, buildTcgQuery,
+    // ID mapping (new in v1.3.0)
+    getMcmId, buildMcmDirectUrl, preloadIdMap, setIdMapUrl,
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.2.0'
+    version: '1.3.0'
   };
 
   root.PoroSearch = api;
