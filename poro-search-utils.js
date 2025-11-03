@@ -244,7 +244,9 @@
    */
   async function getMcmId(poroId) {
     const map = await getIdMap();
-    return map[String(poroId)] || null;
+    const result = map[String(poroId)] || null;
+    console.log('[PoroSearch] getMcmId lookup:', { poroId, mapSize: Object.keys(map).length, result });
+    return result;
   }
 
   /**
