@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pokemon Creditor list — tiny T/M buttons (with MCM set-abbrev)
 // @namespace    poroscripts
-// @version      1.6
+// @version      2.0
 // @description  Add compact T (TCGplayer) and M (MCM) buttons after Condition on the creditor list, using shared search utilities.
 // @match        https://poromagia.com/*/admin/pokemon/creditorderitem/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
@@ -14,7 +14,10 @@
 (async function () {
   'use strict';
 
-  console.log('[Pokecreditor v1.5] Script started');
+  console.log('[Pokecreditor v2.0] Script started (ID-based MCM links)');
+
+  // Preload ID mapping
+  PoroSearch.preloadIdMap().catch(() => {});
   console.log('[Pokecreditor] PoroSearch available?', typeof PoroSearch);
   console.log('[Pokecreditor] Current URL:', window.location.href);
 
@@ -107,6 +110,7 @@
       if (row._pmTinyDone) continue;
 
       const condCell = row.querySelector('td.field-condition');
+      const cardIdCell = row.querySelector('td.field-card_id');
       if (!condCell) {
         console.log('[Pokecreditor] Row skipped - no field-condition cell found');
         continue;
@@ -122,7 +126,22 @@
       holder.className = 'pm-tm-wrap';
       newCell.appendChild(holder);
 
+      // Try to get card ID for direct MCM link
+      const cardId = cardIdCell ? cardIdCell.textContent.trim() : null;
+      const mcmDirectUrl = cardId ? await PoroSearch.buildMcmDirectUrl(cardId) : null;
+
+      // Build queries (always needed for TCG, sometimes for MCM fallback)
       const { tcgQ, mcmQ, mcmBackupQ } = await buildQueries(row);
+
+      // Prepare MCM fallback URLs if no direct link
+      let mcmSearchUrl = null;
+      let mcmBackupSearchUrl = null;
+      let usingFallback = false;
+      if (!mcmDirectUrl) {
+        usingFallback = true;
+        mcmSearchUrl = 'https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=' + encodeURIComponent(mcmQ);
+        mcmBackupSearchUrl = 'https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=' + encodeURIComponent(mcmBackupQ);
+      }
 
       const tBtn = makeBtn('T','Search on TCGplayer', (e)=>{
         e.preventDefault();
@@ -131,12 +150,27 @@
         PoroSearch.openNamed(url, 'TCGWindow');
       });
 
-      const mBtn = makeBtn('M','Search on Cardmarket (Alt = backup)', (e)=>{
+      const mBtn = makeBtn('M', mcmDirectUrl ? 'Direct MCM link' : 'Search on Cardmarket (Alt = backup)', (e)=>{
         e.preventDefault();
-        const q = e.altKey ? mcmBackupQ : mcmQ;
-        const url = 'https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=' + encodeURIComponent(q);
+        let url;
+        if (mcmDirectUrl && !e.altKey) {
+          url = mcmDirectUrl;
+        } else if (e.altKey && mcmBackupSearchUrl) {
+          url = mcmBackupSearchUrl;
+          alert('Had to fall back to old search (backup)');
+        } else if (mcmSearchUrl) {
+          url = mcmSearchUrl;
+          if (usingFallback) alert('Had to fall back to old search');
+        } else {
+          return;
+        }
         PoroSearch.openNamed(url, 'MCMWindow');
       });
+
+      // Visual indicator for direct link
+      if (mcmDirectUrl) {
+        mBtn.style.borderLeft = '3px solid #4CAF50';
+      }
 
       holder.append(tBtn, mBtn);
       row._pmTinyDone = true;
