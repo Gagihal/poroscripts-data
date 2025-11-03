@@ -67,6 +67,8 @@
       const setFull = (setCell.textContent || '').trim();
       const cardId = (cardIdCell.textContent || '').trim();
 
+      console.log('[MCM-ID Debug] Card ID from last column:', cardId);
+
       const { name, num } = PoroSearch.splitNameNum(rawName);
       const cleanName = PoroSearch.sanitize(name);
 
@@ -74,6 +76,7 @@
 
       // Try to get direct MCM URL from ID mapping (using Card ID)
       const mcmDirectUrl = await PoroSearch.buildMcmDirectUrl(cardId);
+      console.log('[MCM-ID Debug] Direct URL result:', mcmDirectUrl);
 
       // Fallback: build search queries if no ID mapping
       let mcmSearchUrl = null;
