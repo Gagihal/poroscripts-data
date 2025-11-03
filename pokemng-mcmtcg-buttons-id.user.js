@@ -59,26 +59,28 @@
       const nameCell = row.querySelector('td.name');
       const setCell  = row.querySelector('td:nth-child(6)');
       const idCell   = row.querySelector('td:nth-child(4)');
-      // First column contains PoroId
-      const poroIdCell = row.querySelector('td:first-child');
-      if (!nameCell || !setCell || !idCell || !poroIdCell) { row._pmMcmTcgDone = true; continue; }
+      // Last column contains Card ID (the one we need for ID mapping)
+      const cardIdCell = row.querySelector('td:last-child');
+      if (!nameCell || !setCell || !idCell || !cardIdCell) { row._pmMcmTcgDone = true; continue; }
 
       const rawName = nameCell.textContent || '';
       const setFull = (setCell.textContent || '').trim();
-      const poroId = (poroIdCell.textContent || '').trim();
+      const cardId = (cardIdCell.textContent || '').trim();
 
       const { name, num } = PoroSearch.splitNameNum(rawName);
       const cleanName = PoroSearch.sanitize(name);
 
       const tcgQ = PoroSearch.buildTcgQuery({ name: cleanName, setFull });
 
-      // Try to get direct MCM URL from ID mapping
-      const mcmDirectUrl = await PoroSearch.buildMcmDirectUrl(poroId);
+      // Try to get direct MCM URL from ID mapping (using Card ID)
+      const mcmDirectUrl = await PoroSearch.buildMcmDirectUrl(cardId);
 
       // Fallback: build search queries if no ID mapping
       let mcmSearchUrl = null;
       let mcmBackupSearchUrl = null;
+      let usingFallback = false;
       if (!mcmDirectUrl) {
+        usingFallback = true;
         const { primary: mcmQ, backup: mcmBackupQ } = await PoroSearch.buildMcmQuery({
           name: cleanName, setFull, number: num
         });
@@ -104,8 +106,10 @@
           url = mcmDirectUrl;
         } else if (e.altKey && mcmBackupSearchUrl) {
           url = mcmBackupSearchUrl;
+          alert('Had to fall back to old search (backup)');
         } else if (mcmSearchUrl) {
           url = mcmSearchUrl;
+          if (usingFallback) alert('Had to fall back to old search');
         } else {
           return; // shouldn't happen
         }
