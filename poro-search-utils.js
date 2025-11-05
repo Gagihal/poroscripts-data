@@ -245,7 +245,9 @@
   async function getMcmId(poroId) {
     const map = await getIdMap();
     const entry = map[String(poroId)];
-    return entry?.mcmId || null;
+    const result = entry?.mcmId || null;
+    console.log('[PoroSearch] getMcmId lookup:', { poroId, mapSize: Object.keys(map).length, result });
+    return result;
   }
 
   /**
@@ -256,7 +258,9 @@
   async function getTcgId(poroId) {
     const map = await getIdMap();
     const entry = map[String(poroId)];
-    return entry?.tcgId || null;
+    const result = entry?.tcgId || null;
+    console.log('[PoroSearch] getTcgId lookup:', { poroId, mapSize: Object.keys(map).length, result });
+    return result;
   }
 
   /**
@@ -320,6 +324,7 @@
 
     // Try to get direct TCGplayer URL from ID mapping
     const tcgDirectUrl = cardData.cardId ? await buildTcgDirectUrl(cardData.cardId) : null;
+    const usingFallback = !tcgDirectUrl;
 
     // Build search query as fallback
     const query = buildTcgQuery(cardData);
@@ -340,6 +345,9 @@
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       const url = tcgDirectUrl || searchUrl;
+      if (usingFallback) {
+        alert('Had to fall back to old search (no TCGplayer ID)');
+      }
       openNamed(url, 'TCGWindow');
     });
 
@@ -449,7 +457,7 @@
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.5.0'
+    version: '1.5.1'
   };
 
   root.PoroSearch = api;
