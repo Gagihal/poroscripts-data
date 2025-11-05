@@ -263,18 +263,159 @@
   async function preloadIdMap() { await getIdMap(); }
   function setIdMapUrl(url) { if (url) IDMAP_URL = String(url); }
 
+  // ---------- URL builders ----------
+  /**
+   * Build complete TCGplayer search URL.
+   * @param {string} query - The search query
+   * @returns {string} Full TCGplayer URL
+   */
+  function buildTcgUrl(query) {
+    return 'https://www.tcgplayer.com/search/pokemon/product?Language=English&ProductTypeName=Cards&productLineName=pokemon&q='
+      + encodeURIComponent(query) + '&view=grid';
+  }
+
+  /**
+   * Build complete Cardmarket search URL.
+   * @param {string} query - The search query
+   * @returns {string} Full Cardmarket URL
+   */
+  function buildMcmSearchUrl(query) {
+    return 'https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=' + encodeURIComponent(query);
+  }
+
+  // ---------- button creation utilities ----------
+  /**
+   * Create a TCGplayer search button.
+   * @param {{name:string, setFull:string}} cardData - Card name and set information
+   * @param {object} options - Optional styling and behavior
+   * @param {string} options.text - Button text (default: 'T')
+   * @param {string} options.className - CSS class name
+   * @param {string} options.style - CSS style string
+   * @returns {HTMLButtonElement} The created button
+   */
+  function createTcgButton(cardData, options = {}) {
+    const { text = 'T', className = '', style = '' } = options;
+    const query = buildTcgQuery(cardData);
+    const url = buildTcgUrl(query);
+
+    const btn = document.createElement('button');
+    btn.textContent = text;
+    btn.title = 'Search on TCGplayer';
+    btn.type = 'button';
+    if (className) btn.className = className;
+    if (style) btn.style.cssText = style;
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openNamed(url, 'TCGWindow');
+    });
+
+    return btn;
+  }
+
+  /**
+   * Create a Cardmarket (MCM) search button with ID-based direct link support.
+   * @param {{name:string, setFull:string, number?:string, cardId?:string}} cardData - Card information
+   * @param {object} options - Optional styling and behavior
+   * @param {string} options.text - Button text (default: 'M')
+   * @param {string} options.className - CSS class name
+   * @param {string} options.style - CSS style string
+   * @param {boolean} options.showDirectIndicator - Show green border for direct links (default: true)
+   * @returns {Promise<HTMLButtonElement>} The created button
+   */
+  async function createMcmButton(cardData, options = {}) {
+    const { text = 'M', className = '', style = '', showDirectIndicator = true } = options;
+
+    // Try to get direct MCM URL from ID mapping
+    const mcmDirectUrl = cardData.cardId ? await buildMcmDirectUrl(cardData.cardId) : null;
+
+    // Build search query fallbacks
+    const { primary: mcmQ, backup: mcmBackupQ } = await buildMcmQuery({
+      name: cardData.name,
+      setFull: cardData.setFull,
+      number: cardData.number
+    });
+
+    const mcmSearchUrl = buildMcmSearchUrl(mcmQ);
+    const mcmBackupSearchUrl = buildMcmSearchUrl(mcmBackupQ);
+    const usingFallback = !mcmDirectUrl;
+
+    const btn = document.createElement('button');
+    btn.textContent = text;
+    btn.type = 'button';
+    btn.title = mcmDirectUrl ? 'Direct MCM link' : 'Search on Cardmarket (Alt = backup)';
+    if (className) btn.className = className;
+    if (style) btn.style.cssText = style;
+
+    // Visual indicator for direct link
+    if (showDirectIndicator && mcmDirectUrl) {
+      btn.style.borderLeft = '3px solid #4CAF50';
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      let url;
+      if (mcmDirectUrl && !e.altKey) {
+        url = mcmDirectUrl;
+      } else if (e.altKey && mcmBackupSearchUrl) {
+        url = mcmBackupSearchUrl;
+      } else if (mcmSearchUrl) {
+        url = mcmSearchUrl;
+      } else {
+        return;
+      }
+      openNamed(url, 'MCMWindow');
+    });
+
+    return btn;
+  }
+
+  /**
+   * Create both TCG and MCM buttons together.
+   * @param {{name:string, setFull:string, number?:string, cardId?:string}} cardData - Card information
+   * @param {object} options - Optional styling and behavior
+   * @param {string} options.tcgText - TCG button text (default: 'T')
+   * @param {string} options.mcmText - MCM button text (default: 'M')
+   * @param {string} options.tcgClassName - TCG button CSS class
+   * @param {string} options.mcmClassName - MCM button CSS class
+   * @param {string} options.tcgStyle - TCG button CSS style
+   * @param {string} options.mcmStyle - MCM button CSS style
+   * @param {boolean} options.showDirectIndicator - Show green border for direct MCM links (default: true)
+   * @returns {Promise<{tcgButton:HTMLButtonElement, mcmButton:HTMLButtonElement}>} Both buttons
+   */
+  async function createSearchButtons(cardData, options = {}) {
+    const tcgButton = createTcgButton(cardData, {
+      text: options.tcgText,
+      className: options.tcgClassName,
+      style: options.tcgStyle
+    });
+
+    const mcmButton = await createMcmButton(cardData, {
+      text: options.mcmText,
+      className: options.mcmClassName,
+      style: options.mcmStyle,
+      showDirectIndicator: options.showDirectIndicator
+    });
+
+    return { tcgButton, mcmButton };
+  }
+
   // ---------- export ----------
   const api = {
     // utils
     sanitize, splitNameNum, firstNum, normalizeSetKey, fixDelta, openNamed,
     // builders
     buildMcmQuery, buildTcgQuery,
+    // URL builders
+    buildTcgUrl, buildMcmSearchUrl,
     // ID mapping (new in v1.3.0)
     getMcmId, buildMcmDirectUrl, preloadIdMap, setIdMapUrl,
+    // button creation (new in v1.4.0)
+    createTcgButton, createMcmButton, createSearchButtons,
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.3.1'
+    version: '1.4.0'
   };
 
   root.PoroSearch = api;

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — MCM/TCG buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      3.1
+// @version      3.2
 // @description  Adds MCM and TCG buttons using direct product ID links for MCM (with search fallback); reuses persistent named tabs.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
@@ -10,9 +10,6 @@
 // @connect      raw.githubusercontent.com
 // @grant        none
 // ==/UserScript==
-
-
-
 
 (async function () {
   'use strict';
@@ -67,70 +64,29 @@
       const setFull = (setCell.textContent || '').trim();
       const cardId = (cardIdCell.textContent || '').trim();
 
-      console.log('[MCM-ID Debug] Card ID from last column:', cardId);
-
       const { name, num } = PoroSearch.splitNameNum(rawName);
       const cleanName = PoroSearch.sanitize(name);
 
-      const tcgQ = PoroSearch.buildTcgQuery({ name: cleanName, setFull });
-
-      // Try to get direct MCM URL from ID mapping (using Card ID)
-      const mcmDirectUrl = await PoroSearch.buildMcmDirectUrl(cardId);
-      console.log('[MCM-ID Debug] Direct URL result:', mcmDirectUrl);
-
-      // Fallback: build search queries if no ID mapping
-      let mcmSearchUrl = null;
-      let mcmBackupSearchUrl = null;
-      let usingFallback = false;
-      if (!mcmDirectUrl) {
-        usingFallback = true;
-        const { primary: mcmQ, backup: mcmBackupQ } = await PoroSearch.buildMcmQuery({
-          name: cleanName, setFull, number: num
-        });
-        mcmSearchUrl = 'https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=' + encodeURIComponent(mcmQ);
-        mcmBackupSearchUrl = 'https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=' + encodeURIComponent(mcmBackupQ);
-      }
-
-      // MCM button (direct link if available, otherwise search; Alt = backup search)
-      const mBtn = document.createElement('button');
-      mBtn.textContent = 'MCM';
-      mBtn.className = 'pm-mcm-btn';
-      mBtn.style.cssText = 'display:block;margin:2px;padding:2px;';
-      // Visual indicator: green border if direct link available
-      if (mcmDirectUrl) {
-        mBtn.style.borderLeft = '3px solid #4CAF50';
-        mBtn.title = 'Direct product link';
-      } else {
-        mBtn.title = 'Search query (Alt-click for backup)';
-      }
-      mBtn.onclick = (e)=>{
-        let url;
-        if (mcmDirectUrl && !e.altKey) {
-          url = mcmDirectUrl;
-        } else if (e.altKey && mcmBackupSearchUrl) {
-          url = mcmBackupSearchUrl;
-          alert('Had to fall back to old search (backup)');
-        } else if (mcmSearchUrl) {
-          url = mcmSearchUrl;
-          if (usingFallback) alert('Had to fall back to old search');
-        } else {
-          return; // shouldn't happen
-        }
-        PoroSearch.openNamed(url, 'MCMWindow');
+      // Parse card data
+      const cardData = {
+        name: cleanName,
+        setFull: setFull,
+        number: num,
+        cardId: cardId
       };
-      idCell.appendChild(mBtn);
 
-      // TCG button (still uses search for now)
-      const tBtn = document.createElement('button');
-      tBtn.textContent = 'TCG';
-      tBtn.className = 'pm-tcg-btn';
-      tBtn.style.cssText = 'display:block;margin:2px;padding:2px;';
-      tBtn.onclick = ()=>{
-        const url = 'https://www.tcgplayer.com/search/pokemon/product?Language=English&ProductTypeName=Cards&productLineName=pokemon&q='
-                  + encodeURIComponent(tcgQ) + '&view=grid';
-        PoroSearch.openNamed(url, 'TCGWindow');
-      };
-      idCell.appendChild(tBtn);
+      // Use the new utility to create both buttons
+      const { tcgButton, mcmButton } = await PoroSearch.createSearchButtons(cardData, {
+        tcgText: 'TCG',
+        mcmText: 'MCM',
+        tcgClassName: 'pm-tcg-btn',
+        mcmClassName: 'pm-mcm-btn',
+        tcgStyle: 'display:block;margin:2px;padding:2px;',
+        mcmStyle: 'display:block;margin:2px;padding:2px;'
+      });
+
+      idCell.appendChild(mcmButton);
+      idCell.appendChild(tcgButton);
 
       row._pmMcmTcgDone = true;
     }
