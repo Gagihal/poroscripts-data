@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — MCM/TCG buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      3.4
+// @version      3.5
 // @description  Adds MCM and TCG buttons using direct product ID links for MCM (with search fallback); reuses persistent named tabs. Automatic search uses first result's ID.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
@@ -82,23 +82,23 @@
 
   // ----- Helper: open MCM/TCG tabs using card data (with ID-based direct links) -----
   async function openSearchTabs(cardData) {
-    // Try to get MCM and TCG IDs from the card data
-    const mcmId = cardData.cardId ? await PoroSearch.getMcmId(cardData.cardId) : null;
-    const tcgId = cardData.cardId ? await PoroSearch.getTcgId(cardData.cardId) : null;
+    // Try to build direct URLs using the utility functions
+    const mcmDirectUrl = cardData.cardId ? await PoroSearch.buildMcmDirectUrl(cardData.cardId) : null;
+    const tcgDirectUrl = cardData.cardId ? await PoroSearch.buildTcgDirectUrl(cardData.cardId) : null;
 
-    // Build URLs - direct if we have IDs, otherwise search
+    // Build URLs - direct if we have them, otherwise search
     let mcmURL, tcgURL;
 
-    if (mcmId) {
-      mcmURL = `https://www.cardmarket.com/en/Pokemon/Products/Singles/${mcmId}`;
+    if (mcmDirectUrl) {
+      mcmURL = mcmDirectUrl;
     } else {
       // Fallback to search
       const mcmQ = PoroSearch.buildMcmQuery(cardData);
       mcmURL = `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(mcmQ)}`;
     }
 
-    if (tcgId) {
-      tcgURL = `https://www.tcgplayer.com/product/${tcgId}`;
+    if (tcgDirectUrl) {
+      tcgURL = tcgDirectUrl;
     } else {
       // Fallback to search
       const tcgQ = PoroSearch.buildTcgQuery(cardData);
