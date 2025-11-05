@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — MCM/TCG buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      3.3
+// @version      3.4
 // @description  Adds MCM and TCG buttons using direct product ID links for MCM (with search fallback); reuses persistent named tabs. Automatic search uses first result's ID.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
@@ -23,14 +23,15 @@
   PoroSearch.preloadIdMap().catch(() => {});
 
   // ----- Helper: get first row's card data after waiting for results -----
-  async function getFirstRowCardData(timeoutMs = 1000) {
-    const startTime = Date.now();
+  async function getFirstRowCardData(timeoutMs = 5000) {
+    return new Promise((resolve) => {
+      const startTime = Date.now();
 
-    // Wait for at least one row to appear
-    while (Date.now() - startTime < timeoutMs) {
-      const firstRow = tbody.querySelector('tr');
-      if (firstRow) {
-        // Extract card data from first row
+      // Function to extract card data from first row
+      function extractFirstRow() {
+        const firstRow = tbody.querySelector('tr');
+        if (!firstRow) return null;
+
         const nameCell = firstRow.querySelector('td.name');
         const setCell = firstRow.querySelector('td:nth-child(6)');
         const cardIdCell = firstRow.querySelector('td a[href*="link-product-card"]')?.parentElement;
@@ -49,13 +50,34 @@
             cardId: cardId
           };
         }
+        return null;
       }
 
-      // Wait a bit before checking again
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
+      // Check if we already have a row
+      const existing = extractFirstRow();
+      if (existing) {
+        resolve(existing);
+        return;
+      }
 
-    return null; // No results found within timeout
+      // Set up timeout
+      const timeoutId = setTimeout(() => {
+        observer.disconnect();
+        resolve(null);
+      }, timeoutMs);
+
+      // Watch for table mutations
+      const observer = new MutationObserver(() => {
+        const cardData = extractFirstRow();
+        if (cardData) {
+          clearTimeout(timeoutId);
+          observer.disconnect();
+          resolve(cardData);
+        }
+      });
+
+      observer.observe(tbody, { childList: true, subtree: true });
+    });
   }
 
   // ----- Helper: open MCM/TCG tabs using card data (with ID-based direct links) -----
