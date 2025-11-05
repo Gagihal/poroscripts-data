@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — MCM/TCG buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      3.8
+// @version      3.7
 // @description  Adds MCM and TCG buttons using direct product ID links for MCM (with search fallback); reuses persistent named tabs. Automatic search uses first result's ID.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
@@ -28,44 +28,37 @@
       const startTime = Date.now();
 
       // Function to extract card data from first row
-      // Uses EXACT same logic as enhanceRows() to ensure consistency
       function extractFirstRow() {
-        const row = tbody.querySelector('tr');
-        if (!row) {
+        const firstRow = tbody.querySelector('tr');
+        if (!firstRow) {
           console.log('[extractFirstRow] No first row found');
           return null;
         }
 
-        // EXACT same selectors as enhanceRows()
-        const nameCell = row.querySelector('td.name');
-        const setCell  = row.querySelector('td:nth-child(6)');
-        const idCell   = row.querySelector('td:nth-child(4)');
-        const cardIdCell = row.querySelector('td a[href*="link-product-card"]')?.parentElement;
+        const nameCell = firstRow.querySelector('td.name');
+        const setCell = firstRow.querySelector('td:nth-child(6)');
+        const cardIdCell = firstRow.querySelector('td a[href*="link-product-card"]')?.parentElement;
 
-        console.log('[extractFirstRow] nameCell:', nameCell, 'setCell:', setCell, 'idCell:', idCell, 'cardIdCell:', cardIdCell);
+        console.log('[extractFirstRow] nameCell:', nameCell, 'setCell:', setCell, 'cardIdCell:', cardIdCell);
 
-        if (!nameCell || !setCell || !idCell || !cardIdCell) {
-          console.log('[extractFirstRow] Missing required cells');
-          return null;
+        if (nameCell && setCell) {
+          const rawName = nameCell.textContent || '';
+          const setFull = (setCell.textContent || '').trim();
+          const cardId = cardIdCell ? (cardIdCell.textContent || '').trim() : null;
+          const { name, num } = PoroSearch.splitNameNum(rawName);
+          const cleanName = PoroSearch.sanitize(name);
+
+          console.log('[extractFirstRow] Extracted cardId:', cardId);
+
+          return {
+            name: cleanName,
+            setFull: setFull,
+            number: num,
+            cardId: cardId
+          };
         }
-
-        // EXACT same extraction as enhanceRows()
-        const rawName = nameCell.textContent || '';
-        const setFull = (setCell.textContent || '').trim();
-        const cardId = (cardIdCell.textContent || '').trim();
-
-        const { name, num } = PoroSearch.splitNameNum(rawName);
-        const cleanName = PoroSearch.sanitize(name);
-
-        console.log('[extractFirstRow] Extracted - name:', cleanName, 'setFull:', setFull, 'number:', num, 'cardId:', cardId);
-
-        // EXACT same cardData structure as enhanceRows()
-        return {
-          name: cleanName,
-          setFull: setFull,
-          number: num,
-          cardId: cardId
-        };
+        console.log('[extractFirstRow] Missing required cells');
+        return null;
       }
 
       // Check if we already have a row
