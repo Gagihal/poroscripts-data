@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Cardmarket → Quick Links for Pokemon Sellers (TCGP + PM)
 // @namespace    cm-links
-// @version      1.5
+// @version      1.6
 // @description  Adds TCGP and PM buttons next to each card name on a seller's Singles page (with direct TCGplayer links)
 // @match        https://www.cardmarket.com/*/Pokemon/Users/*/Offers/Singles*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
@@ -37,10 +37,10 @@
     `;
 
     const BUTTON_CONTAINER_STYLE = `
-        float:right;
         display:flex;
         gap:4px;
         align-items:center;
+        margin-left:auto;
     `;
 
     // Extract card data including MCM ID from image URL
@@ -157,8 +157,14 @@
         btnContainer.appendChild(tcgBtn);
         btnContainer.appendChild(pmBtn);
 
-        // Get the parent cell and insert the container
+        // Get the parent cell and make it flexbox to push buttons right
         const nameCell = nameAnchor.closest('.col-seller') || nameAnchor.parentElement;
+
+        // Set the cell to use flexbox with space-between
+        nameCell.style.display = 'flex';
+        nameCell.style.justifyContent = 'space-between';
+        nameCell.style.alignItems = 'center';
+
         nameCell.appendChild(btnContainer);
     }
 
