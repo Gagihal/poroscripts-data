@@ -9,6 +9,11 @@ This folder contains older versions of scripts that have been superseded by newe
 - **Reason:** The newer version uses shared utilities from `poro-search-utils.js` and includes ID-based direct MCM links for better accuracy
 - **Deprecated:** 2025-11-05
 
+### pm-broker.js & pm-broker.html
+- **Replaced by:** Built-in functionality in `poro-search-utils.js` (`openNamed` function)
+- **Reason:** The cross-origin broker approach is no longer needed; the simpler window.open() with named targets handles tab reuse effectively
+- **Deprecated:** 2025-11-05
+
 ---
 
 **Note:** These files are kept for reference only and should not be used in production.
