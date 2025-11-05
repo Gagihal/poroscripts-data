@@ -8,10 +8,10 @@
   const LS_TS  = 'poro_mcm_setabbr_map_ts_v1';
   const CACHE_MS = 24 * 3600 * 1000; // 24h
 
-  // Product ID mapping
-  let IDMAP_URL = 'https://raw.githubusercontent.com/gagihal/poroscripts-data/main/product-id-map.json';
-  const IDMAP_LS_KEY = 'poro_product_id_map_v1';
-  const IDMAP_LS_TS  = 'poro_product_id_map_ts_v1';
+  // Product ID mapping (v2 includes both MCM and TCGplayer IDs)
+  let IDMAP_URL = 'https://raw.githubusercontent.com/gagihal/poroscripts-data/main/product-id-map-v2.json';
+  const IDMAP_LS_KEY = 'poro_product_id_map_v2';
+  const IDMAP_LS_TS  = 'poro_product_id_map_ts_v2';
   const IDMAP_CACHE_MS = 7 * 24 * 3600 * 1000; // 7 days (IDs change less frequently)
 
   // ---------- small helpers ----------
@@ -244,9 +244,19 @@
    */
   async function getMcmId(poroId) {
     const map = await getIdMap();
-    const result = map[String(poroId)] || null;
-    console.log('[PoroSearch] getMcmId lookup:', { poroId, mapSize: Object.keys(map).length, result });
-    return result;
+    const entry = map[String(poroId)];
+    return entry?.mcmId || null;
+  }
+
+  /**
+   * Get TCGplayer product ID from PoroId.
+   * @param {string|number} poroId
+   * @returns {Promise<string|null>} TCGplayer product ID or null if not found
+   */
+  async function getTcgId(poroId) {
+    const map = await getIdMap();
+    const entry = map[String(poroId)];
+    return entry?.tcgId || null;
   }
 
   /**
@@ -258,6 +268,17 @@
     const mcmId = await getMcmId(poroId);
     if (!mcmId) return null;
     return `https://www.cardmarket.com/Pokemon/Products?idProduct=${mcmId}`;
+  }
+
+  /**
+   * Build direct TCGplayer product URL from PoroId, or null if not in mapping.
+   * @param {string|number} poroId
+   * @returns {Promise<string|null>}
+   */
+  async function buildTcgDirectUrl(poroId) {
+    const tcgId = await getTcgId(poroId);
+    if (!tcgId) return null;
+    return `https://www.tcgplayer.com/product/${tcgId}`;
   }
 
   async function preloadIdMap() { await getIdMap(); }
@@ -285,28 +306,40 @@
 
   // ---------- button creation utilities ----------
   /**
-   * Create a TCGplayer search button.
-   * @param {{name:string, setFull:string}} cardData - Card name and set information
+   * Create a TCGplayer search button with ID-based direct link support.
+   * @param {{name:string, setFull:string, cardId?:string}} cardData - Card name, set information, and optional card ID
    * @param {object} options - Optional styling and behavior
    * @param {string} options.text - Button text (default: 'T')
    * @param {string} options.className - CSS class name
    * @param {string} options.style - CSS style string
-   * @returns {HTMLButtonElement} The created button
+   * @param {boolean} options.showDirectIndicator - Show visual indicator for direct links (default: true)
+   * @returns {Promise<HTMLButtonElement>} The created button
    */
-  function createTcgButton(cardData, options = {}) {
-    const { text = 'T', className = '', style = '' } = options;
+  async function createTcgButton(cardData, options = {}) {
+    const { text = 'T', className = '', style = '', showDirectIndicator = true } = options;
+
+    // Try to get direct TCGplayer URL from ID mapping
+    const tcgDirectUrl = cardData.cardId ? await buildTcgDirectUrl(cardData.cardId) : null;
+
+    // Build search query as fallback
     const query = buildTcgQuery(cardData);
-    const url = buildTcgUrl(query);
+    const searchUrl = buildTcgUrl(query);
 
     const btn = document.createElement('button');
     btn.textContent = text;
-    btn.title = 'Search on TCGplayer';
     btn.type = 'button';
+    btn.title = tcgDirectUrl ? 'Direct TCGplayer link' : 'Search on TCGplayer';
     if (className) btn.className = className;
     if (style) btn.style.cssText = style;
 
+    // Visual indicator for direct link
+    if (showDirectIndicator && tcgDirectUrl) {
+      btn.style.borderLeft = '3px solid #2196F3'; // Blue for TCGplayer
+    }
+
     btn.addEventListener('click', (e) => {
       e.preventDefault();
+      const url = tcgDirectUrl || searchUrl;
       openNamed(url, 'TCGWindow');
     });
 
@@ -380,14 +413,15 @@
    * @param {string} options.mcmClassName - MCM button CSS class
    * @param {string} options.tcgStyle - TCG button CSS style
    * @param {string} options.mcmStyle - MCM button CSS style
-   * @param {boolean} options.showDirectIndicator - Show green border for direct MCM links (default: true)
+   * @param {boolean} options.showDirectIndicator - Show visual indicators for direct links (default: true)
    * @returns {Promise<{tcgButton:HTMLButtonElement, mcmButton:HTMLButtonElement}>} Both buttons
    */
   async function createSearchButtons(cardData, options = {}) {
-    const tcgButton = createTcgButton(cardData, {
+    const tcgButton = await createTcgButton(cardData, {
       text: options.tcgText,
       className: options.tcgClassName,
-      style: options.tcgStyle
+      style: options.tcgStyle,
+      showDirectIndicator: options.showDirectIndicator
     });
 
     const mcmButton = await createMcmButton(cardData, {
@@ -408,14 +442,14 @@
     buildMcmQuery, buildTcgQuery,
     // URL builders
     buildTcgUrl, buildMcmSearchUrl,
-    // ID mapping (new in v1.3.0)
-    getMcmId, buildMcmDirectUrl, preloadIdMap, setIdMapUrl,
-    // button creation (new in v1.4.0)
+    // ID mapping (v1.3.0: MCM IDs, v1.5.0: added TCGplayer IDs)
+    getMcmId, getTcgId, buildMcmDirectUrl, buildTcgDirectUrl, preloadIdMap, setIdMapUrl,
+    // button creation (new in v1.4.0, enhanced in v1.5.0 with TCG direct links)
     createTcgButton, createMcmButton, createSearchButtons,
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.4.0'
+    version: '1.5.0'
   };
 
   root.PoroSearch = api;
