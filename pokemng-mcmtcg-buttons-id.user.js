@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — MCM/TCG buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      4.0
-// @description  Adds MCM and TCG buttons using direct product ID links. Automatic search on filter submit uses first result's ID after 5s delay.
+// @version      4.1
+// @description  Adds MCM and TCG buttons using direct product ID links. Automatic search on filter submit uses first result's ID.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng-mcmtcg-buttons-id.user.js
@@ -186,31 +186,26 @@
 
   // ----- filter form: open both tabs on submit -----
   document.getElementById('filterer')?.addEventListener('submit', async (e) => {
-    console.log('[Filter Submit] Form submitted, waiting 5 seconds for table to populate...');
+    console.log('[Filter Submit] Form submitted');
 
-    // Wait 5 seconds for the form to submit and table to update
-    setTimeout(async () => {
-      console.log('[Filter Submit] 5 seconds elapsed, now trying to get first row data');
+    const cardData = await getFirstRowCardData();
 
-      const cardData = await getFirstRowCardData();
+    if (cardData) {
+      // Use first row's data to open tabs with direct ID links
+      await openSearchTabs(cardData);
+    } else {
+      // No results, fall back to name-based search from filter
+      const raw = document.getElementById('id_name')?.value.trim() || '';
+      const { name } = PoroSearch.splitNameNum(raw);
+      const clean = PoroSearch.sanitize(name);
 
-      if (cardData) {
-        // Use first row's data to open tabs with direct ID links
-        await openSearchTabs(cardData);
-      } else {
-        // No results, fall back to name-based search from filter
-        const raw = document.getElementById('id_name')?.value.trim() || '';
-        const { name } = PoroSearch.splitNameNum(raw);
-        const clean = PoroSearch.sanitize(name);
-
-        const fallbackData = {
-          name: clean,
-          setFull: '',
-          number: '',
-          cardId: null
-        };
-        await openSearchTabs(fallbackData);
-      }
-    }, 5000); // Wait 5 seconds for table to populate
+      const fallbackData = {
+        name: clean,
+        setFull: '',
+        number: '',
+        cardId: null
+      };
+      await openSearchTabs(fallbackData);
+    }
   });
 })();
