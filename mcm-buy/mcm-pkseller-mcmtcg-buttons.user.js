@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Cardmarket → Quick Links for Pokemon Sellers (TCGP + PM)
 // @namespace    cm-links
-// @version      1.9
+// @version      2.0
 // @description  Adds TCGP and PM buttons next to each card name on a seller's Singles page (with direct TCGplayer links)
 // @match        https://www.cardmarket.com/*/Pokemon/Users/*/Offers/Singles*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
@@ -98,51 +98,13 @@
         };
 
         // Create TCGP button with direct link support (via MCM ID reverse lookup)
-        const tcgpBtn = await PoroSearch.createTcgButton(cardData, {
+        const tcgBtn = await PoroSearch.createTcgButton(cardData, {
             text: 'TCGP',
             elementType: 'a',
             style: PILL_STYLE,
             // Override: use mcmId for reverse lookup instead of cardId
             getTcgId: mcmId ? async () => await PoroSearch.getTcgIdFromMcm(mcmId) : null
         });
-
-        // If we have mcmId, manually handle the direct link logic
-        let tcgBtn;
-        if (mcmId) {
-            const tcgId = await PoroSearch.getTcgIdFromMcm(mcmId);
-            const tcgDirectUrl = tcgId ? `https://www.tcgplayer.com/product/${tcgId}` : null;
-            const tcgSearchUrl = PoroSearch.buildTcgUrl(PoroSearch.buildTcgQuery(cardData));
-            const usingFallback = !tcgDirectUrl;
-
-            tcgBtn = document.createElement('a');
-            tcgBtn.textContent = 'TCGP';
-            tcgBtn.href = '#';
-            tcgBtn.title = tcgDirectUrl ? 'Direct TCGplayer link' : 'Search on TCGplayer';
-            tcgBtn.style.cssText = PILL_STYLE;
-            if (tcgDirectUrl) {
-                tcgBtn.style.borderLeft = '3px solid #2196F3';
-            }
-            tcgBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const url = tcgDirectUrl || tcgSearchUrl;
-                if (usingFallback) {
-                    alert('Had to fall back to old search (no TCGplayer ID)');
-                }
-                PoroSearch.openNamed(url, 'TCGPWindow');
-            });
-        } else {
-            // No MCM ID, create standard search button
-            const tcgSearchUrl = PoroSearch.buildTcgUrl(PoroSearch.buildTcgQuery(cardData));
-            tcgBtn = document.createElement('a');
-            tcgBtn.textContent = 'TCGP';
-            tcgBtn.href = '#';
-            tcgBtn.title = 'Search on TCGplayer';
-            tcgBtn.style.cssText = PILL_STYLE;
-            tcgBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                PoroSearch.openNamed(tcgSearchUrl, 'TCGPWindow');
-            });
-        }
 
         // Create PM button using utility
         const pmBtn = PoroSearch.createPmButton(cardData, {
