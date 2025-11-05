@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Cardmarket → Quick Links for Pokemon Sellers (TCGP + PM)
 // @namespace    cm-links
-// @version      2.0
+// @version      2.1
 // @description  Adds TCGP and PM buttons next to each card name on a seller's Singles page (with direct TCGplayer links)
 // @match        https://www.cardmarket.com/*/Pokemon/Users/*/Offers/Singles*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
@@ -18,6 +18,52 @@
 
     // Preload ID mapping for better performance
     PoroSearch.preloadIdMap().catch(() => {});
+
+    // MCM to Poromagia set name mapping
+    const SETMAP_URL = 'https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/mcm-to-poromagia-setmap.json';
+    const SETMAP_CACHE_KEY = 'mcm_poro_setmap';
+    const SETMAP_CACHE_TS_KEY = 'mcm_poro_setmap_ts';
+    const SETMAP_CACHE_MS = 7 * 24 * 3600 * 1000; // 7 days
+    let setMap = null;
+
+    async function loadSetMap() {
+        // Check cache first
+        try {
+            const cachedTs = parseInt(localStorage.getItem(SETMAP_CACHE_TS_KEY) || '0', 10);
+            if (cachedTs && Date.now() - cachedTs < SETMAP_CACHE_MS) {
+                const cached = localStorage.getItem(SETMAP_CACHE_KEY);
+                if (cached) {
+                    setMap = JSON.parse(cached);
+                    return setMap;
+                }
+            }
+        } catch (e) {}
+
+        // Fetch from GitHub
+        try {
+            const response = await fetch(SETMAP_URL);
+            if (response.ok) {
+                setMap = await response.json();
+                // Cache it
+                try {
+                    localStorage.setItem(SETMAP_CACHE_KEY, JSON.stringify(setMap));
+                    localStorage.setItem(SETMAP_CACHE_TS_KEY, String(Date.now()));
+                } catch (e) {}
+            }
+        } catch (e) {
+            console.warn('[MCM-Buy] Failed to load set mapping:', e);
+        }
+        return setMap || {};
+    }
+
+    // Map MCM set name to Poromagia set name
+    function mapSetName(mcmSetName) {
+        if (!setMap || !mcmSetName) return mcmSetName;
+        return setMap[mcmSetName] || mcmSetName;
+    }
+
+    // Preload set mapping
+    loadSetMap().catch(() => {});
 
     // Pill button style for Cardmarket's dark theme
     const PILL_STYLE = `
@@ -90,11 +136,20 @@
         const { cardName, setName, nameAnchor, mcmId } = data;
         if (!cardName || !nameAnchor) return;
 
+        // Map MCM set name to Poromagia set name (if mapping exists)
+        const poroSetName = mapSetName(setName);
+
         // Prepare card data for button utilities
         const cardData = {
             name: cardName,
             setFull: setName,
             mcmId: mcmId  // Used for reverse lookup to get TCG ID
+        };
+
+        // Card data for PM button (uses mapped Poromagia set name)
+        const pmCardData = {
+            name: cardName,
+            setFull: poroSetName
         };
 
         // Create TCGP button with direct link support (via MCM ID reverse lookup)
@@ -106,8 +161,8 @@
             getTcgId: mcmId ? async () => await PoroSearch.getTcgIdFromMcm(mcmId) : null
         });
 
-        // Create PM button using utility
-        const pmBtn = PoroSearch.createPmButton(cardData, {
+        // Create PM button using utility with mapped set name
+        const pmBtn = PoroSearch.createPmButton(pmCardData, {
             text: 'PM',
             elementType: 'a',
             style: PILL_STYLE
