@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — MCM/TCG buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      3.6
+// @version      3.7
 // @description  Adds MCM and TCG buttons using direct product ID links for MCM (with search fallback); reuses persistent named tabs. Automatic search uses first result's ID.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
@@ -30,18 +30,25 @@
       // Function to extract card data from first row
       function extractFirstRow() {
         const firstRow = tbody.querySelector('tr');
-        if (!firstRow) return null;
+        if (!firstRow) {
+          console.log('[extractFirstRow] No first row found');
+          return null;
+        }
 
         const nameCell = firstRow.querySelector('td.name');
         const setCell = firstRow.querySelector('td:nth-child(6)');
         const cardIdCell = firstRow.querySelector('td a[href*="link-product-card"]')?.parentElement;
 
-        if (nameCell && setCell && cardIdCell) {
+        console.log('[extractFirstRow] nameCell:', nameCell, 'setCell:', setCell, 'cardIdCell:', cardIdCell);
+
+        if (nameCell && setCell) {
           const rawName = nameCell.textContent || '';
           const setFull = (setCell.textContent || '').trim();
-          const cardId = (cardIdCell.textContent || '').trim();
+          const cardId = cardIdCell ? (cardIdCell.textContent || '').trim() : null;
           const { name, num } = PoroSearch.splitNameNum(rawName);
           const cleanName = PoroSearch.sanitize(name);
+
+          console.log('[extractFirstRow] Extracted cardId:', cardId);
 
           return {
             name: cleanName,
@@ -50,6 +57,7 @@
             cardId: cardId
           };
         }
+        console.log('[extractFirstRow] Missing required cells');
         return null;
       }
 
