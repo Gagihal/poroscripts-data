@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — MCM/TCG buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      4.2
-// @description  Adds MCM and TCG buttons using direct product ID links. Automatic search on filter submit waits for table mutation.
+// @version      5.0
+// @description  Adds MCM and TCG buttons using direct product ID links. Automatic search piggybacks on button enhancement for first row.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng-mcmtcg-buttons-id.user.js
@@ -22,76 +22,8 @@
   // Preload ID mapping for better performance
   PoroSearch.preloadIdMap().catch(() => {});
 
-  // ----- Helper: get first row's card data after waiting for results -----
-  async function getFirstRowCardData(waitForMutation = false, timeoutMs = 5000) {
-    return new Promise((resolve) => {
-      // Function to extract card data from first row
-      function extractFirstRow() {
-        const firstRow = tbody.querySelector('tr');
-        if (!firstRow) {
-          console.log('[extractFirstRow] No first row found');
-          return null;
-        }
-
-        const nameCell = firstRow.querySelector('td.name');
-        const setCell = firstRow.querySelector('td:nth-child(6)');
-        const cardIdCell = firstRow.querySelector('td a[href*="link-product-card"]')?.parentElement;
-
-        console.log('[extractFirstRow] nameCell:', nameCell, 'setCell:', setCell, 'cardIdCell:', cardIdCell);
-
-        if (nameCell && setCell) {
-          const rawName = nameCell.textContent || '';
-          const setFull = (setCell.textContent || '').trim();
-          const cardId = cardIdCell ? (cardIdCell.textContent || '').trim() : null;
-          const { name, num } = PoroSearch.splitNameNum(rawName);
-          const cleanName = PoroSearch.sanitize(name);
-
-          console.log('[extractFirstRow] Extracted - name:', cleanName, 'cardId:', cardId);
-
-          return {
-            name: cleanName,
-            setFull: setFull,
-            number: num,
-            cardId: cardId
-          };
-        }
-        console.log('[extractFirstRow] Missing required cells');
-        return null;
-      }
-
-      // If not waiting for mutation, check immediately
-      if (!waitForMutation) {
-        const existing = extractFirstRow();
-        if (existing) {
-          console.log('[getFirstRowCardData] Immediate check found data');
-          resolve(existing);
-          return;
-        }
-      } else {
-        console.log('[getFirstRowCardData] Waiting for table mutation...');
-      }
-
-      // Set up timeout
-      const timeoutId = setTimeout(() => {
-        console.log('[getFirstRowCardData] Timeout reached, no valid data found');
-        observer.disconnect();
-        resolve(null);
-      }, timeoutMs);
-
-      // Watch for table mutations
-      const observer = new MutationObserver(() => {
-        const cardData = extractFirstRow();
-        if (cardData) {
-          console.log('[getFirstRowCardData] Mutation detected, found valid data');
-          clearTimeout(timeoutId);
-          observer.disconnect();
-          resolve(cardData);
-        }
-      });
-
-      observer.observe(tbody, { childList: true, subtree: true });
-    });
-  }
+  // Flag to trigger automatic search when first row is enhanced
+  let pendingAutoSearch = false;
 
   // ----- Helper: open MCM/TCG tabs using card data (with ID-based direct links) -----
   async function openSearchTabs(cardData) {
@@ -136,6 +68,7 @@
   // ----- per-row buttons -----
   async function enhanceRows(){
     // process rows sequentially so we can await query-builders cleanly
+    let isFirstRow = true;
     for (const row of tbody.querySelectorAll('tr')){
       if (row._pmMcmTcgDone) continue;
 
@@ -175,6 +108,16 @@
       idCell.appendChild(tcgButton);
 
       row._pmMcmTcgDone = true;
+
+      // If this is the first row AND we have a pending auto-search, trigger it
+      if (isFirstRow && pendingAutoSearch) {
+        console.log('[enhanceRows] First row enhanced, triggering automatic search');
+        pendingAutoSearch = false;
+        // Trigger the automatic search with this row's data
+        await openSearchTabs(cardData);
+      }
+
+      isFirstRow = false;
     }
   }
 
@@ -190,30 +133,9 @@
     .observe(tbody, { childList: true, subtree: true });
 
   // ----- filter form: open both tabs on submit -----
-  document.getElementById('filterer')?.addEventListener('submit', async (e) => {
-    console.log('[Filter Submit] Form submitted, waiting for table to update...');
-
-    // Wait for mutation - table will be reloaded after form submit
-    const cardData = await getFirstRowCardData(true);
-
-    if (cardData) {
-      // Use first row's data to open tabs with direct ID links
-      console.log('[Filter Submit] Got card data from first row, opening tabs');
-      await openSearchTabs(cardData);
-    } else {
-      // No results, fall back to name-based search from filter
-      console.log('[Filter Submit] No card data found, using fallback search');
-      const raw = document.getElementById('id_name')?.value.trim() || '';
-      const { name } = PoroSearch.splitNameNum(raw);
-      const clean = PoroSearch.sanitize(name);
-
-      const fallbackData = {
-        name: clean,
-        setFull: '',
-        number: '',
-        cardId: null
-      };
-      await openSearchTabs(fallbackData);
-    }
+  document.getElementById('filterer')?.addEventListener('submit', (e) => {
+    console.log('[Filter Submit] Form submitted, setting flag for automatic search');
+    // Set flag - when the first row is enhanced, it will trigger the automatic search
+    pendingAutoSearch = true;
   });
 })();
