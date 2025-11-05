@@ -1,4 +1,4 @@
-// poro-search-utils.js  v1.3.1
+// poro-search-utils.js  v1.5.1
 ;(function (root) {
   'use strict';
 
