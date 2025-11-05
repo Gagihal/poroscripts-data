@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Cardmarket → Quick Links for Pokemon Sellers (TCGP + PM)
 // @namespace    cm-links
-// @version      1.2
+// @version      1.3
 // @description  Adds TCGP and PM buttons next to each card name on a seller's Singles page (with direct TCGplayer links)
 // @match        https://www.cardmarket.com/*/Pokemon/Users/*/Offers/Singles*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
@@ -22,18 +22,18 @@
     // Pill button style for Cardmarket's dark theme
     const PILL_STYLE = `
         display:inline-block;
-        fontSize:10px;
-        lineHeight:1.2;
+        font-size:10px;
+        line-height:1.2;
         padding:2px 4px;
-        marginLeft:8px;
-        borderRadius:4px;
+        margin-left:8px;
+        border-radius:4px;
         border:1px solid #888;
         background:#1a1a1a;
         color:#fff;
         cursor:pointer;
-        textDecoration:none;
-        fontFamily:sans-serif;
-        whiteSpace:nowrap;
+        text-decoration:none;
+        font-family:sans-serif;
+        white-space:nowrap;
     `;
 
     // Extract card data including MCM ID from image URL
