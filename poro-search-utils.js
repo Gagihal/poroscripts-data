@@ -1,4 +1,4 @@
-// poro-search-utils.js  v1.5.1
+// poro-search-utils.js  v1.6.0
 ;(function (root) {
   'use strict';
 
@@ -285,6 +285,36 @@
     return `https://www.tcgplayer.com/product/${tcgId}`;
   }
 
+  /**
+   * Get Poro card ID from MCM product ID (reverse lookup).
+   * @param {string|number} mcmId
+   * @returns {Promise<string|null>} Poro card ID or null if not found
+   */
+  async function getPoroIdFromMcm(mcmId) {
+    const map = await getIdMap();
+    const mcmIdStr = String(mcmId);
+    // Search through all entries to find matching MCM ID
+    for (const [poroId, entry] of Object.entries(map)) {
+      if (entry.mcmId === mcmIdStr) {
+        console.log('[PoroSearch] getPoroIdFromMcm lookup:', { mcmId, result: poroId });
+        return poroId;
+      }
+    }
+    console.log('[PoroSearch] getPoroIdFromMcm lookup:', { mcmId, result: null });
+    return null;
+  }
+
+  /**
+   * Get TCG product ID from MCM product ID (reverse lookup via Poro ID).
+   * @param {string|number} mcmId
+   * @returns {Promise<string|null>} TCG product ID or null if not found
+   */
+  async function getTcgIdFromMcm(mcmId) {
+    const poroId = await getPoroIdFromMcm(mcmId);
+    if (!poroId) return null;
+    return await getTcgId(poroId);
+  }
+
   async function preloadIdMap() { await getIdMap(); }
   function setIdMapUrl(url) { if (url) IDMAP_URL = String(url); }
 
@@ -306,6 +336,17 @@
    */
   function buildMcmSearchUrl(query) {
     return 'https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=' + encodeURIComponent(query);
+  }
+
+  /**
+   * Build Poromagia store manager search URL.
+   * @param {{name:string, setFull:string}} params - Card name and set
+   * @returns {string} Full Poromagia store manager URL
+   */
+  function buildPmUrl(params) {
+    const name = encodeURIComponent(params.name || '');
+    const set = encodeURIComponent(params.setFull || '');
+    return `https://poromagia.com/store_manager/pokemon/?name=${name}&set=${set}`;
   }
 
   // ---------- button creation utilities ----------
@@ -412,6 +453,39 @@
   }
 
   /**
+   * Create a Poromagia store manager search button.
+   * @param {{name:string, setFull:string}} cardData - Card name and set information
+   * @param {object} options - Optional styling and behavior
+   * @param {string} options.text - Button text (default: 'PM')
+   * @param {string} options.className - CSS class name
+   * @param {string} options.style - CSS style string
+   * @param {string} options.elementType - Element type: 'button' or 'a' (default: 'button')
+   * @returns {HTMLElement} The created button or link
+   */
+  function createPmButton(cardData, options = {}) {
+    const { text = 'PM', className = '', style = '', elementType = 'button' } = options;
+    const url = buildPmUrl(cardData);
+
+    const btn = document.createElement(elementType);
+    btn.textContent = text;
+    btn.title = 'Search on Poromagia store manager';
+    if (elementType === 'button') {
+      btn.type = 'button';
+    } else {
+      btn.href = '#';
+    }
+    if (className) btn.className = className;
+    if (style) btn.style.cssText = style;
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openNamed(url, 'PMWindow');
+    });
+
+    return btn;
+  }
+
+  /**
    * Create both TCG and MCM buttons together.
    * @param {{name:string, setFull:string, number?:string, cardId?:string}} cardData - Card information
    * @param {object} options - Optional styling and behavior
@@ -449,15 +523,17 @@
     // builders
     buildMcmQuery, buildTcgQuery,
     // URL builders
-    buildTcgUrl, buildMcmSearchUrl,
-    // ID mapping (v1.3.0: MCM IDs, v1.5.0: added TCGplayer IDs)
-    getMcmId, getTcgId, buildMcmDirectUrl, buildTcgDirectUrl, preloadIdMap, setIdMapUrl,
-    // button creation (new in v1.4.0, enhanced in v1.5.0 with TCG direct links)
-    createTcgButton, createMcmButton, createSearchButtons,
+    buildTcgUrl, buildMcmSearchUrl, buildPmUrl,
+    // ID mapping (v1.3.0: MCM IDs, v1.5.0: TCG IDs, v1.6.0: reverse lookups)
+    getMcmId, getTcgId, buildMcmDirectUrl, buildTcgDirectUrl,
+    getPoroIdFromMcm, getTcgIdFromMcm,
+    preloadIdMap, setIdMapUrl,
+    // button creation (v1.4.0: initial, v1.5.0: TCG direct links, v1.6.0: PM button)
+    createTcgButton, createMcmButton, createPmButton, createSearchButtons,
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.5.1'
+    version: '1.6.0'
   };
 
   root.PoroSearch = api;
