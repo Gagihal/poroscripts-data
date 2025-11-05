@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — MCM/TCG buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      3.5
+// @version      3.6
 // @description  Adds MCM and TCG buttons using direct product ID links for MCM (with search fallback); reuses persistent named tabs. Automatic search uses first result's ID.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
@@ -82,9 +82,14 @@
 
   // ----- Helper: open MCM/TCG tabs using card data (with ID-based direct links) -----
   async function openSearchTabs(cardData) {
+    console.log('[openSearchTabs] cardData:', cardData);
+
     // Try to build direct URLs using the utility functions
     const mcmDirectUrl = cardData.cardId ? await PoroSearch.buildMcmDirectUrl(cardData.cardId) : null;
     const tcgDirectUrl = cardData.cardId ? await PoroSearch.buildTcgDirectUrl(cardData.cardId) : null;
+
+    console.log('[openSearchTabs] mcmDirectUrl:', mcmDirectUrl);
+    console.log('[openSearchTabs] tcgDirectUrl:', tcgDirectUrl);
 
     // Build URLs - direct if we have them, otherwise search
     let mcmURL, tcgURL;
@@ -92,19 +97,23 @@
     if (mcmDirectUrl) {
       mcmURL = mcmDirectUrl;
     } else {
-      // Fallback to search
-      const mcmQ = PoroSearch.buildMcmQuery(cardData);
+      // Fallback to search - buildMcmQuery is async and returns {primary, backup}
+      const mcmQueryObj = await PoroSearch.buildMcmQuery(cardData);
+      const mcmQ = mcmQueryObj.primary || mcmQueryObj.backup || cardData.name;
+      console.log('[openSearchTabs] MCM fallback to search, query:', mcmQ);
       mcmURL = `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(mcmQ)}`;
     }
 
     if (tcgDirectUrl) {
       tcgURL = tcgDirectUrl;
     } else {
-      // Fallback to search
+      // Fallback to search - buildTcgQuery is sync and returns a string
       const tcgQ = PoroSearch.buildTcgQuery(cardData);
+      console.log('[openSearchTabs] TCG fallback to search, query:', tcgQ);
       tcgURL = `https://www.tcgplayer.com/search/pokemon/product?Language=English&ProductTypeName=Cards&productLineName=pokemon&q=${encodeURIComponent(tcgQ)}&view=grid`;
     }
 
+    console.log('[openSearchTabs] Final URLs - MCM:', mcmURL, 'TCG:', tcgURL);
     PoroSearch.openNamed(mcmURL, 'MCMWindow');
     PoroSearch.openNamed(tcgURL, 'TCGWindow');
   }
