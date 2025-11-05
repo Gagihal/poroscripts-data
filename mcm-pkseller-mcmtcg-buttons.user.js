@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Cardmarket → Quick Links for Pokemon Sellers (TCGP + PM)
 // @namespace    cm-links
-// @version      1.4
+// @version      1.5
 // @description  Adds TCGP and PM buttons next to each card name on a seller's Singles page (with direct TCGplayer links)
 // @match        https://www.cardmarket.com/*/Pokemon/Users/*/Offers/Singles*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
@@ -34,7 +34,13 @@
         text-decoration:none;
         font-family:sans-serif;
         white-space:nowrap;
+    `;
+
+    const BUTTON_CONTAINER_STYLE = `
         float:right;
+        display:flex;
+        gap:4px;
+        align-items:center;
     `;
 
     // Extract card data including MCM ID from image URL
@@ -145,13 +151,15 @@
             style: PILL_STYLE
         });
 
-        // Insert buttons in reverse order (since they float right)
-        // Get the parent cell to insert into
-        const nameCell = nameAnchor.closest('.col-seller') || nameAnchor.parentElement;
+        // Create a container for the buttons that floats right
+        const btnContainer = document.createElement('span');
+        btnContainer.style.cssText = BUTTON_CONTAINER_STYLE;
+        btnContainer.appendChild(tcgBtn);
+        btnContainer.appendChild(pmBtn);
 
-        // Insert PM first, then TCGP (they'll stack right-to-left due to float)
-        nameCell.appendChild(pmBtn);
-        nameCell.appendChild(tcgBtn);
+        // Get the parent cell and insert the container
+        const nameCell = nameAnchor.closest('.col-seller') || nameAnchor.parentElement;
+        nameCell.appendChild(btnContainer);
     }
 
     async function scanAll() {
