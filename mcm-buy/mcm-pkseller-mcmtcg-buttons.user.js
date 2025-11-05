@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Cardmarket → Quick Links for Pokemon Sellers (TCGP + PM)
 // @namespace    cm-links
-// @version      2.1
+// @version      2.2
 // @description  Adds TCGP and PM buttons next to each card name on a seller's Singles page (with direct TCGplayer links)
 // @match        https://www.cardmarket.com/*/Pokemon/Users/*/Offers/Singles*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
@@ -62,8 +62,7 @@
         return setMap[mcmSetName] || mcmSetName;
     }
 
-    // Preload set mapping
-    loadSetMap().catch(() => {});
+    // Preload set mapping (will be awaited in init)
 
     // Pill button style for Cardmarket's dark theme
     const PILL_STYLE = `
@@ -200,7 +199,8 @@
         obs.observe(table, { childList: true, subtree: true });
     }
 
-    function init() {
+    async function init() {
+        await loadSetMap();  // Wait for set map to load before scanning
         scanAll();
         initObserver();
     }
