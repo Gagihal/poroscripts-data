@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — MCM/TCG buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      3.7
+// @version      3.9
 // @description  Adds MCM and TCG buttons using direct product ID links for MCM (with search fallback); reuses persistent named tabs. Automatic search uses first result's ID.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
@@ -135,6 +135,13 @@
     btn.title = 'Open/reuse persistent tabs using first result\'s direct ID links (or search if no results).';
     btn.style.cssText = 'margin:8px 0;padding:2px 6px;border:1px solid #888;background:#eee;';
     btn.onclick = async () => {
+      console.log('[OPEN MCM/TCG] Button clicked, waiting 5 seconds...');
+
+      // Wait 5 seconds to let table populate
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      console.log('[OPEN MCM/TCG] 5 seconds elapsed, now trying to get first row data');
+
       // Try to get first row's card data
       const cardData = await getFirstRowCardData();
 
