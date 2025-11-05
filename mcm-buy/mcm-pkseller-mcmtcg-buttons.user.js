@@ -2,12 +2,12 @@
 // ==UserScript==
 // @name         Cardmarket → Quick Links for Pokemon Sellers (TCGP + PM)
 // @namespace    cm-links
-// @version      1.8
+// @version      1.9
 // @description  Adds TCGP and PM buttons next to each card name on a seller's Singles page (with direct TCGplayer links)
 // @match        https://www.cardmarket.com/*/Pokemon/Users/*/Offers/Singles*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
-// @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/mcm-pkseller/mcm-pkseller-mcmtcg-buttons.user.js
-// @downloadURL  https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/mcm-pkseller/mcm-pkseller-mcmtcg-buttons.user.js
+// @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/mcm-buy/mcm-pkseller-mcmtcg-buttons.user.js
+// @downloadURL  https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/mcm-buy/mcm-pkseller-mcmtcg-buttons.user.js
 // @connect      raw.githubusercontent.com
 // @run-at       document-idle
 // @grant        none
