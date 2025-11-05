@@ -1,6 +1,11 @@
 // ==UserScript==
-// @name         Poromagia Pokemon Creditor Core Enhancements OLD
+// @name         Poromagia Pokemon Creditor — F1-F12 Quick Add & Cart Dock
+// @namespace    poroscripts
+// @version      1.0
+// @description  F1-F12 keys for quick-add, docked cart panel, smart filter splitting, F-key annotations, and column customization
 // @match        https://poromagia.com/pokemon_credit/*
+// @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokecreditor/pokecreditor-f1-f12-and-cart.user.js
+// @downloadURL  https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokecreditor/pokecreditor-f1-f12-and-cart.user.js
 // @grant        none
 // ==/UserScript==
 (function(){
