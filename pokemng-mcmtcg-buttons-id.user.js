@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — MCM/TCG buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      3.9
-// @description  Adds MCM and TCG buttons using direct product ID links for MCM (with search fallback); reuses persistent named tabs. Automatic search uses first result's ID.
+// @version      4.0
+// @description  Adds MCM and TCG buttons using direct product ID links. Automatic search on filter submit uses first result's ID after 5s delay.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng-mcmtcg-buttons-id.user.js
@@ -126,45 +126,7 @@
     PoroSearch.openNamed(tcgURL, 'TCGWindow');
   }
 
-  // ----- toolbar: pre-open both tabs from current filter -----
-  (function injectToolbarBtn(){
-    const content = document.getElementById('content');
-    if (!content) return;
-    const btn = document.createElement('button');
-    btn.textContent = 'OPEN MCM/TCG';
-    btn.title = 'Open/reuse persistent tabs using first result\'s direct ID links (or search if no results).';
-    btn.style.cssText = 'margin:8px 0;padding:2px 6px;border:1px solid #888;background:#eee;';
-    btn.onclick = async () => {
-      console.log('[OPEN MCM/TCG] Button clicked, waiting 5 seconds...');
-
-      // Wait 5 seconds to let table populate
-      await new Promise(resolve => setTimeout(resolve, 5000));
-
-      console.log('[OPEN MCM/TCG] 5 seconds elapsed, now trying to get first row data');
-
-      // Try to get first row's card data
-      const cardData = await getFirstRowCardData();
-
-      if (cardData) {
-        // Use first row's data to open tabs with direct ID links
-        await openSearchTabs(cardData);
-      } else {
-        // No results yet, fall back to name-based search from filter
-        const raw = document.getElementById('id_name')?.value.trim() || '';
-        const { name } = PoroSearch.splitNameNum(raw);
-        const clean = PoroSearch.sanitize(name);
-
-        const fallbackData = {
-          name: clean,
-          setFull: '',
-          number: '',
-          cardId: null
-        };
-        await openSearchTabs(fallbackData);
-      }
-    };
-    content.insertBefore(btn, manager);
-  })();
+  // Toolbar button removed - deprecated in favor of automatic search on filter submit
 
   // ----- per-row buttons -----
   async function enhanceRows(){
@@ -224,8 +186,12 @@
 
   // ----- filter form: open both tabs on submit -----
   document.getElementById('filterer')?.addEventListener('submit', async (e) => {
-    // Wait a moment for the form to submit and table to update, then open tabs
+    console.log('[Filter Submit] Form submitted, waiting 5 seconds for table to populate...');
+
+    // Wait 5 seconds for the form to submit and table to update
     setTimeout(async () => {
+      console.log('[Filter Submit] 5 seconds elapsed, now trying to get first row data');
+
       const cardData = await getFirstRowCardData();
 
       if (cardData) {
@@ -245,6 +211,6 @@
         };
         await openSearchTabs(fallbackData);
       }
-    }, 100); // Small delay to let form submit first
+    }, 5000); // Wait 5 seconds for table to populate
   });
 })();
