@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — MCM/TCG buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      5.0
-// @description  Adds MCM and TCG buttons using direct product ID links. Automatic search piggybacks on button enhancement for first row.
+// @version      5.1
+// @description  Adds MCM and TCG buttons using direct product ID links. Automatic search skips NO CARD rows to find first valid card.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng-mcmtcg-buttons-id.user.js
@@ -68,7 +68,7 @@
   // ----- per-row buttons -----
   async function enhanceRows(){
     // process rows sequentially so we can await query-builders cleanly
-    let isFirstRow = true;
+    let autoSearchTriggered = false;
     for (const row of tbody.querySelectorAll('tr')){
       if (row._pmMcmTcgDone) continue;
 
@@ -109,15 +109,19 @@
 
       row._pmMcmTcgDone = true;
 
-      // If this is the first row AND we have a pending auto-search, trigger it
-      if (isFirstRow && pendingAutoSearch) {
-        console.log('[enhanceRows] First row enhanced, triggering automatic search');
+      // If we have a pending auto-search and haven't triggered it yet
+      // Skip rows with "NO CARD" and find the first valid card
+      if (pendingAutoSearch && !autoSearchTriggered) {
+        if (cardId === 'NO CARD') {
+          console.log('[enhanceRows] Skipping row with NO CARD, looking for next valid card');
+          continue;
+        }
+        console.log('[enhanceRows] Found valid card, triggering automatic search');
         pendingAutoSearch = false;
+        autoSearchTriggered = true;
         // Trigger the automatic search with this row's data
         await openSearchTabs(cardData);
       }
-
-      isFirstRow = false;
     }
   }
 
