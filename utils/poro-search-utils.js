@@ -1,15 +1,15 @@
-// poro-search-utils.js  v1.6.0
+// poro-search-utils.js  v1.6.1
 ;(function (root) {
   'use strict';
 
   // ---------- config ----------
-  let MAP_URL = 'https://raw.githubusercontent.com/gagihal/poroscripts-data/main/mcmsetmap.json';
+  let MAP_URL = 'https://raw.githubusercontent.com/gagihal/poroscripts-data/main/utils/mcmsetmap.json';
   const LS_KEY = 'poro_mcm_setabbr_map_v1';
   const LS_TS  = 'poro_mcm_setabbr_map_ts_v1';
   const CACHE_MS = 24 * 3600 * 1000; // 24h
 
   // Product ID mapping (v2 includes both MCM and TCGplayer IDs)
-  let IDMAP_URL = 'https://raw.githubusercontent.com/gagihal/poroscripts-data/main/product-id-map-v2.json';
+  let IDMAP_URL = 'https://raw.githubusercontent.com/gagihal/poroscripts-data/main/utils/product-id-map-v2.json';
   const IDMAP_LS_KEY = 'poro_product_id_map_v2';
   const IDMAP_LS_TS  = 'poro_product_id_map_ts_v2';
   const IDMAP_CACHE_MS = 7 * 24 * 3600 * 1000; // 7 days (IDs change less frequently)
