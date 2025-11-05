@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — MCM/TCG buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      4.1
-// @description  Adds MCM and TCG buttons using direct product ID links. Automatic search on filter submit uses first result's ID.
+// @version      4.2
+// @description  Adds MCM and TCG buttons using direct product ID links. Automatic search on filter submit waits for table mutation.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/poro-search-utils.js
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng-mcmtcg-buttons-id.user.js
@@ -23,10 +23,8 @@
   PoroSearch.preloadIdMap().catch(() => {});
 
   // ----- Helper: get first row's card data after waiting for results -----
-  async function getFirstRowCardData(timeoutMs = 5000) {
+  async function getFirstRowCardData(waitForMutation = false, timeoutMs = 5000) {
     return new Promise((resolve) => {
-      const startTime = Date.now();
-
       // Function to extract card data from first row
       function extractFirstRow() {
         const firstRow = tbody.querySelector('tr');
@@ -48,7 +46,7 @@
           const { name, num } = PoroSearch.splitNameNum(rawName);
           const cleanName = PoroSearch.sanitize(name);
 
-          console.log('[extractFirstRow] Extracted cardId:', cardId);
+          console.log('[extractFirstRow] Extracted - name:', cleanName, 'cardId:', cardId);
 
           return {
             name: cleanName,
@@ -61,15 +59,21 @@
         return null;
       }
 
-      // Check if we already have a row
-      const existing = extractFirstRow();
-      if (existing) {
-        resolve(existing);
-        return;
+      // If not waiting for mutation, check immediately
+      if (!waitForMutation) {
+        const existing = extractFirstRow();
+        if (existing) {
+          console.log('[getFirstRowCardData] Immediate check found data');
+          resolve(existing);
+          return;
+        }
+      } else {
+        console.log('[getFirstRowCardData] Waiting for table mutation...');
       }
 
       // Set up timeout
       const timeoutId = setTimeout(() => {
+        console.log('[getFirstRowCardData] Timeout reached, no valid data found');
         observer.disconnect();
         resolve(null);
       }, timeoutMs);
@@ -78,6 +82,7 @@
       const observer = new MutationObserver(() => {
         const cardData = extractFirstRow();
         if (cardData) {
+          console.log('[getFirstRowCardData] Mutation detected, found valid data');
           clearTimeout(timeoutId);
           observer.disconnect();
           resolve(cardData);
@@ -186,15 +191,18 @@
 
   // ----- filter form: open both tabs on submit -----
   document.getElementById('filterer')?.addEventListener('submit', async (e) => {
-    console.log('[Filter Submit] Form submitted');
+    console.log('[Filter Submit] Form submitted, waiting for table to update...');
 
-    const cardData = await getFirstRowCardData();
+    // Wait for mutation - table will be reloaded after form submit
+    const cardData = await getFirstRowCardData(true);
 
     if (cardData) {
       // Use first row's data to open tabs with direct ID links
+      console.log('[Filter Submit] Got card data from first row, opening tabs');
       await openSearchTabs(cardData);
     } else {
       // No results, fall back to name-based search from filter
+      console.log('[Filter Submit] No card data found, using fallback search');
       const raw = document.getElementById('id_name')?.value.trim() || '';
       const { name } = PoroSearch.splitNameNum(raw);
       const clean = PoroSearch.sanitize(name);
