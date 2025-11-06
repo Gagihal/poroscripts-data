@@ -1,4 +1,4 @@
-// poro-search-utils.js  v1.6.1
+// poro-search-utils.js  v1.6.2
 ;(function (root) {
   'use strict';
 
@@ -315,6 +315,36 @@
     return await getTcgId(poroId);
   }
 
+  /**
+   * Get Poro card ID from TCG product ID (reverse lookup).
+   * @param {string|number} tcgId
+   * @returns {Promise<string|null>} Poro card ID or null if not found
+   */
+  async function getPoroIdFromTcg(tcgId) {
+    const map = await getIdMap();
+    const tcgIdStr = String(tcgId);
+    // Search through all entries to find matching TCG ID
+    for (const [poroId, entry] of Object.entries(map)) {
+      if (entry.tcgId === tcgIdStr) {
+        console.log('[PoroSearch] getPoroIdFromTcg lookup:', { tcgId, result: poroId });
+        return poroId;
+      }
+    }
+    console.log('[PoroSearch] getPoroIdFromTcg lookup:', { tcgId, result: null });
+    return null;
+  }
+
+  /**
+   * Get MCM product ID from TCG product ID (reverse lookup via Poro ID).
+   * @param {string|number} tcgId
+   * @returns {Promise<string|null>} MCM product ID or null if not found
+   */
+  async function getMcmIdFromTcg(tcgId) {
+    const poroId = await getPoroIdFromTcg(tcgId);
+    if (!poroId) return null;
+    return await getMcmId(poroId);
+  }
+
   async function preloadIdMap() { await getIdMap(); }
   function setIdMapUrl(url) { if (url) IDMAP_URL = String(url); }
 
@@ -524,16 +554,16 @@
     buildMcmQuery, buildTcgQuery,
     // URL builders
     buildTcgUrl, buildMcmSearchUrl, buildPmUrl,
-    // ID mapping (v1.3.0: MCM IDs, v1.5.0: TCG IDs, v1.6.0: reverse lookups)
+    // ID mapping (v1.3.0: MCM IDs, v1.5.0: TCG IDs, v1.6.0: reverse lookups, v1.6.2: TCG reverse lookups)
     getMcmId, getTcgId, buildMcmDirectUrl, buildTcgDirectUrl,
-    getPoroIdFromMcm, getTcgIdFromMcm,
+    getPoroIdFromMcm, getTcgIdFromMcm, getPoroIdFromTcg, getMcmIdFromTcg,
     preloadIdMap, setIdMapUrl,
     // button creation (v1.4.0: initial, v1.5.0: TCG direct links, v1.6.0: PM button)
     createTcgButton, createMcmButton, createPmButton, createSearchButtons,
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.6.0'
+    version: '1.6.2'
   };
 
   root.PoroSearch = api;
