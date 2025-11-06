@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Cardmarket → Quick Links for Pokemon Sellers (TCGP + PM)
 // @namespace    cm-links
-// @version      2.2
+// @version      2.3
 // @description  Adds TCGP and PM buttons next to each card name on a seller's Singles page (with direct TCGplayer links)
 // @match        https://www.cardmarket.com/*/Pokemon/Users/*/Offers/Singles*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
@@ -138,11 +138,14 @@
         // Map MCM set name to Poromagia set name (if mapping exists)
         const poroSetName = mapSetName(setName);
 
+        // Convert MCM ID to Poro ID for direct link support
+        const poroId = mcmId ? await PoroSearch.getPoroIdFromMcm(mcmId) : null;
+
         // Prepare card data for button utilities
         const cardData = {
             name: cardName,
             setFull: setName,
-            mcmId: mcmId  // Used for reverse lookup to get TCG ID
+            cardId: poroId  // Poro ID for direct link lookup
         };
 
         // Card data for PM button (uses mapped Poromagia set name)
@@ -151,13 +154,11 @@
             setFull: poroSetName
         };
 
-        // Create TCGP button with direct link support (via MCM ID reverse lookup)
+        // Create TCGP button with direct link support
         const tcgBtn = await PoroSearch.createTcgButton(cardData, {
             text: 'TCGP',
             elementType: 'a',
-            style: PILL_STYLE,
-            // Override: use mcmId for reverse lookup instead of cardId
-            getTcgId: mcmId ? async () => await PoroSearch.getTcgIdFromMcm(mcmId) : null
+            style: PILL_STYLE
         });
 
         // Create PM button using utility with mapped set name
