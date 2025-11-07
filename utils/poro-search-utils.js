@@ -1,4 +1,4 @@
-// poro-search-utils.js  v1.7.0
+// poro-search-utils.js  v1.7.1
 ;(function (root) {
   'use strict';
 
@@ -8,10 +8,10 @@
   const LS_TS  = 'poro_mcm_setabbr_map_ts_v1';
   const CACHE_MS = 24 * 3600 * 1000; // 24h
 
-  // Product ID mapping (v3 includes updated TCGplayer IDs with improved coverage)
+  // Product ID mapping (v4 includes corrected TCGplayer matching)
   let IDMAP_URL = 'https://raw.githubusercontent.com/gagihal/poroscripts-data/main/utils/product-id-map-v2.json';
-  const IDMAP_LS_KEY = 'poro_product_id_map_v3';
-  const IDMAP_LS_TS  = 'poro_product_id_map_ts_v3';
+  const IDMAP_LS_KEY = 'poro_product_id_map_v4';
+  const IDMAP_LS_TS  = 'poro_product_id_map_ts_v4';
   const IDMAP_CACHE_MS = 7 * 24 * 3600 * 1000; // 7 days (IDs change less frequently)
 
   // ---------- small helpers ----------
@@ -554,7 +554,7 @@
     buildMcmQuery, buildTcgQuery,
     // URL builders
     buildTcgUrl, buildMcmSearchUrl, buildPmUrl,
-    // ID mapping (v1.3.0: MCM IDs, v1.5.0: TCG IDs, v1.6.0: reverse lookups, v1.6.2: TCG reverse lookups, v1.7.0: improved TCG coverage)
+    // ID mapping (v1.3.0: MCM IDs, v1.5.0: TCG IDs, v1.6.0: reverse lookups, v1.6.2: TCG reverse lookups, v1.7.0: improved TCG coverage, v1.7.1: corrected TCG matching)
     getMcmId, getTcgId, buildMcmDirectUrl, buildTcgDirectUrl,
     getPoroIdFromMcm, getTcgIdFromMcm, getPoroIdFromTcg, getMcmIdFromTcg,
     preloadIdMap, setIdMapUrl,
@@ -563,7 +563,7 @@
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.7.0'
+    version: '1.7.1'
   };
 
   root.PoroSearch = api;
