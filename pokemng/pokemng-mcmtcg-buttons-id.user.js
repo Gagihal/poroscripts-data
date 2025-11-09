@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — MCM/TCG buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      5.5
-// @description  Adds MCM and TCG buttons using direct product ID links with corrected TCGplayer matching. Automatic search skips NO CARD rows to find first valid card.
+// @version      5.6
+// @description  Adds MCM and TCG buttons using direct product ID links (handles ID 0 gracefully). Automatic search skips NO CARD rows to find first valid card.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng/pokemng-mcmtcg-buttons-id.user.js

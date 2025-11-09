@@ -1,4 +1,4 @@
-// poro-search-utils.js  v1.7.1
+// poro-search-utils.js  v1.7.2
 ;(function (root) {
   'use strict';
 
@@ -393,8 +393,9 @@
   async function createTcgButton(cardData, options = {}) {
     const { text = 'T', className = '', style = '', showDirectIndicator = true } = options;
 
-    // Try to get direct TCGplayer URL from ID mapping
-    const tcgDirectUrl = cardData.cardId ? await buildTcgDirectUrl(cardData.cardId) : null;
+    // Try to get direct TCGplayer URL from ID mapping (skip if ID is 0 or "0")
+    const hasValidId = cardData.cardId && cardData.cardId !== '0' && cardData.cardId !== 0;
+    const tcgDirectUrl = hasValidId ? await buildTcgDirectUrl(cardData.cardId) : null;
     const usingFallback = !tcgDirectUrl;
 
     // Build search query as fallback
@@ -416,9 +417,7 @@
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       const url = tcgDirectUrl || searchUrl;
-      if (usingFallback) {
-        alert('Had to fall back to old search (no TCGplayer ID)');
-      }
+      // Silently fall back to search if no direct link available
       openNamed(url, 'TCGWindow');
     });
 
@@ -438,8 +437,9 @@
   async function createMcmButton(cardData, options = {}) {
     const { text = 'M', className = '', style = '', showDirectIndicator = true } = options;
 
-    // Try to get direct MCM URL from ID mapping
-    const mcmDirectUrl = cardData.cardId ? await buildMcmDirectUrl(cardData.cardId) : null;
+    // Try to get direct MCM URL from ID mapping (skip if ID is 0 or "0")
+    const hasValidId = cardData.cardId && cardData.cardId !== '0' && cardData.cardId !== 0;
+    const mcmDirectUrl = hasValidId ? await buildMcmDirectUrl(cardData.cardId) : null;
 
     // Build search query fallbacks
     const { primary: mcmQ, backup: mcmBackupQ } = await buildMcmQuery({
@@ -554,16 +554,16 @@
     buildMcmQuery, buildTcgQuery,
     // URL builders
     buildTcgUrl, buildMcmSearchUrl, buildPmUrl,
-    // ID mapping (v1.3.0: MCM IDs, v1.5.0: TCG IDs, v1.6.0: reverse lookups, v1.6.2: TCG reverse lookups, v1.7.0: improved TCG coverage, v1.7.1: corrected TCG matching)
+    // ID mapping (v1.3.0: MCM IDs, v1.5.0: TCG IDs, v1.6.0: reverse lookups, v1.6.2: TCG reverse lookups, v1.7.0: improved TCG coverage, v1.7.1: corrected TCG matching, v1.7.2: handle ID 0 as fallback)
     getMcmId, getTcgId, buildMcmDirectUrl, buildTcgDirectUrl,
     getPoroIdFromMcm, getTcgIdFromMcm, getPoroIdFromTcg, getMcmIdFromTcg,
     preloadIdMap, setIdMapUrl,
-    // button creation (v1.4.0: initial, v1.5.0: TCG direct links, v1.6.0: PM button)
+    // button creation (v1.4.0: initial, v1.5.0: TCG direct links, v1.6.0: PM button, v1.7.2: removed fallback alert)
     createTcgButton, createMcmButton, createPmButton, createSearchButtons,
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.7.1'
+    version: '1.7.2'
   };
 
   root.PoroSearch = api;
