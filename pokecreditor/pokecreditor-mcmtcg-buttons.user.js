@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pokemon Creditor list — tiny T/M buttons (with MCM set-abbrev)
 // @namespace    poroscripts
-// @version      2.6
+// @version      2.7
 // @description  Add compact T (TCGplayer) and M (MCM) buttons after Condition on the creditor list (handles ID 0 gracefully).
 // @match        https://poromagia.com/*/admin/pokemon/creditorderitem/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js

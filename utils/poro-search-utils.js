@@ -1,4 +1,4 @@
-// poro-search-utils.js  v1.7.2
+// poro-search-utils.js  v1.7.3
 ;(function (root) {
   'use strict';
 
@@ -387,11 +387,12 @@
    * @param {string} options.text - Button text (default: 'T')
    * @param {string} options.className - CSS class name
    * @param {string} options.style - CSS style string
+   * @param {string} options.elementType - Element type: 'button' or 'a' (default: 'button')
    * @param {boolean} options.showDirectIndicator - Show visual indicator for direct links (default: true)
-   * @returns {Promise<HTMLButtonElement>} The created button
+   * @returns {Promise<HTMLElement>} The created button or link
    */
   async function createTcgButton(cardData, options = {}) {
-    const { text = 'T', className = '', style = '', showDirectIndicator = true } = options;
+    const { text = 'T', className = '', style = '', showDirectIndicator = true, elementType = 'button' } = options;
 
     // Try to get direct TCGplayer URL from ID mapping (skip if ID is 0 or "0")
     const hasValidId = cardData.cardId && cardData.cardId !== '0' && cardData.cardId !== 0;
@@ -402,10 +403,25 @@
     const query = buildTcgQuery(cardData);
     const searchUrl = buildTcgUrl(query);
 
-    const btn = document.createElement('button');
+    // Debug logging
+    if (!hasValidId) {
+      console.log('[PoroSearch] TCG fallback for card:', {
+        cardId: cardData.cardId,
+        name: cardData.name,
+        setFull: cardData.setFull,
+        query: query,
+        searchUrl: searchUrl
+      });
+    }
+
+    const btn = document.createElement(elementType);
     btn.textContent = text;
-    btn.type = 'button';
     btn.title = tcgDirectUrl ? 'Direct TCGplayer link' : 'Search on TCGplayer';
+    if (elementType === 'button') {
+      btn.type = 'button';
+    } else {
+      btn.href = '#';
+    }
     if (className) btn.className = className;
     if (style) btn.style.cssText = style;
 
@@ -431,11 +447,12 @@
    * @param {string} options.text - Button text (default: 'M')
    * @param {string} options.className - CSS class name
    * @param {string} options.style - CSS style string
+   * @param {string} options.elementType - Element type: 'button' or 'a' (default: 'button')
    * @param {boolean} options.showDirectIndicator - Show green border for direct links (default: true)
-   * @returns {Promise<HTMLButtonElement>} The created button
+   * @returns {Promise<HTMLElement>} The created button or link
    */
   async function createMcmButton(cardData, options = {}) {
-    const { text = 'M', className = '', style = '', showDirectIndicator = true } = options;
+    const { text = 'M', className = '', style = '', showDirectIndicator = true, elementType = 'button' } = options;
 
     // Try to get direct MCM URL from ID mapping (skip if ID is 0 or "0")
     const hasValidId = cardData.cardId && cardData.cardId !== '0' && cardData.cardId !== 0;
@@ -452,10 +469,14 @@
     const mcmBackupSearchUrl = buildMcmSearchUrl(mcmBackupQ);
     const usingFallback = !mcmDirectUrl;
 
-    const btn = document.createElement('button');
+    const btn = document.createElement(elementType);
     btn.textContent = text;
-    btn.type = 'button';
     btn.title = mcmDirectUrl ? 'Direct MCM link' : 'Search on Cardmarket (Alt = backup)';
+    if (elementType === 'button') {
+      btn.type = 'button';
+    } else {
+      btn.href = '#';
+    }
     if (className) btn.className = className;
     if (style) btn.style.cssText = style;
 
@@ -554,16 +575,16 @@
     buildMcmQuery, buildTcgQuery,
     // URL builders
     buildTcgUrl, buildMcmSearchUrl, buildPmUrl,
-    // ID mapping (v1.3.0: MCM IDs, v1.5.0: TCG IDs, v1.6.0: reverse lookups, v1.6.2: TCG reverse lookups, v1.7.0: improved TCG coverage, v1.7.1: corrected TCG matching, v1.7.2: handle ID 0 as fallback)
+    // ID mapping (v1.3.0: MCM IDs, v1.5.0: TCG IDs, v1.6.0: reverse lookups, v1.6.2: TCG reverse lookups, v1.7.0: improved TCG coverage, v1.7.1: corrected TCG matching, v1.7.2: handle ID 0 as fallback, v1.7.3: debug logging)
     getMcmId, getTcgId, buildMcmDirectUrl, buildTcgDirectUrl,
     getPoroIdFromMcm, getTcgIdFromMcm, getPoroIdFromTcg, getMcmIdFromTcg,
     preloadIdMap, setIdMapUrl,
-    // button creation (v1.4.0: initial, v1.5.0: TCG direct links, v1.6.0: PM button, v1.7.2: removed fallback alert)
+    // button creation (v1.4.0: initial, v1.5.0: TCG direct links, v1.6.0: PM button, v1.7.2: removed fallback alert, v1.7.3: debug logging + elementType support)
     createTcgButton, createMcmButton, createPmButton, createSearchButtons,
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.7.2'
+    version: '1.7.3'
   };
 
   root.PoroSearch = api;
