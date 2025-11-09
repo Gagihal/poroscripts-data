@@ -1,4 +1,4 @@
-// poro-search-utils.js  v1.7.3
+// poro-search-utils.js  v1.7.4
 ;(function (root) {
   'use strict';
 
@@ -259,7 +259,6 @@
     const map = await getIdMap();
     const entry = map[String(poroId)];
     const result = entry?.tcgId || null;
-    console.log('[PoroSearch] getTcgId lookup:', { poroId, mapSize: Object.keys(map).length, result });
     return result;
   }
 
@@ -270,7 +269,8 @@
    */
   async function buildMcmDirectUrl(poroId) {
     const mcmId = await getMcmId(poroId);
-    if (!mcmId) return null;
+    // Treat "0" or 0 as invalid ID
+    if (!mcmId || mcmId === '0' || mcmId === 0) return null;
     return `https://www.cardmarket.com/Pokemon/Products?idProduct=${mcmId}`;
   }
 
@@ -281,7 +281,8 @@
    */
   async function buildTcgDirectUrl(poroId) {
     const tcgId = await getTcgId(poroId);
-    if (!tcgId) return null;
+    // Treat "0" or 0 as invalid ID
+    if (!tcgId || tcgId === '0' || tcgId === 0) return null;
     return `https://www.tcgplayer.com/product/${tcgId}`;
   }
 
@@ -402,17 +403,6 @@
     // Build search query as fallback
     const query = buildTcgQuery(cardData);
     const searchUrl = buildTcgUrl(query);
-
-    // Debug logging
-    if (!hasValidId) {
-      console.log('[PoroSearch] TCG fallback for card:', {
-        cardId: cardData.cardId,
-        name: cardData.name,
-        setFull: cardData.setFull,
-        query: query,
-        searchUrl: searchUrl
-      });
-    }
 
     const btn = document.createElement(elementType);
     btn.textContent = text;
@@ -575,16 +565,16 @@
     buildMcmQuery, buildTcgQuery,
     // URL builders
     buildTcgUrl, buildMcmSearchUrl, buildPmUrl,
-    // ID mapping (v1.3.0: MCM IDs, v1.5.0: TCG IDs, v1.6.0: reverse lookups, v1.6.2: TCG reverse lookups, v1.7.0: improved TCG coverage, v1.7.1: corrected TCG matching, v1.7.2: handle ID 0 as fallback, v1.7.3: debug logging)
+    // ID mapping (v1.3.0: MCM IDs, v1.5.0: TCG IDs, v1.6.0: reverse lookups, v1.6.2: TCG reverse lookups, v1.7.0: improved TCG coverage, v1.7.1: corrected TCG matching, v1.7.2: handle ID 0 as fallback, v1.7.4: treat "0" as invalid in buildDirectUrl)
     getMcmId, getTcgId, buildMcmDirectUrl, buildTcgDirectUrl,
     getPoroIdFromMcm, getTcgIdFromMcm, getPoroIdFromTcg, getMcmIdFromTcg,
     preloadIdMap, setIdMapUrl,
-    // button creation (v1.4.0: initial, v1.5.0: TCG direct links, v1.6.0: PM button, v1.7.2: removed fallback alert, v1.7.3: debug logging + elementType support)
+    // button creation (v1.4.0: initial, v1.5.0: TCG direct links, v1.6.0: PM button, v1.7.2: removed fallback alert, v1.7.3: elementType support)
     createTcgButton, createMcmButton, createPmButton, createSearchButtons,
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.7.3'
+    version: '1.7.4'
   };
 
   root.PoroSearch = api;
