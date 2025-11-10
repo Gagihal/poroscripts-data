@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Pokemon Creditor list — TCG Seller button (A)
 // @namespace    poroscripts
-// @version      1.0
-// @description  Add compact A (TCGplayer Seller Admin) button after Condition on the creditor list
+// @version      1.1
+// @description  Add compact A (TCGplayer Seller Admin) button after Condition on the creditor list (updated: improved TCG ID matching)
 // @match        https://poromagia.com/*/admin/pokemon/creditorderitem/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokecreditor/pokecreditor-tcgseller-button.user.js

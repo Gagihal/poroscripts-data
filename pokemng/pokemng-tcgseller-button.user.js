@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — TCG Seller button (ID-based direct links)
 // @namespace    poroscripts
-// @version      1.1
-// @description  Adds TCGA (TCGplayer Seller Admin) button using direct product ID links. Automatic search skips NO CARD rows to find first valid card.
+// @version      1.2
+// @description  Adds TCGA (TCGplayer Seller Admin) button using direct product ID links (updated: improved TCG ID matching). Automatic search skips NO CARD rows to find first valid card.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng/pokemng-tcgseller-button.user.js

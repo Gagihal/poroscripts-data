@@ -1,4 +1,4 @@
-// poro-search-utils.js  v1.8.0
+// poro-search-utils.js  v1.8.1
 ;(function (root) {
   'use strict';
 
@@ -8,10 +8,10 @@
   const LS_TS  = 'poro_mcm_setabbr_map_ts_v1';
   const CACHE_MS = 24 * 3600 * 1000; // 24h
 
-  // Product ID mapping (v4 includes corrected TCGplayer matching)
+  // Product ID mapping (v5 includes improved TCGplayer matching from CardKaikki sheet)
   let IDMAP_URL = 'https://raw.githubusercontent.com/gagihal/poroscripts-data/main/utils/product-id-map-v2.json';
-  const IDMAP_LS_KEY = 'poro_product_id_map_v4';
-  const IDMAP_LS_TS  = 'poro_product_id_map_ts_v4';
+  const IDMAP_LS_KEY = 'poro_product_id_map_v5';
+  const IDMAP_LS_TS  = 'poro_product_id_map_ts_v5';
   const IDMAP_CACHE_MS = 7 * 24 * 3600 * 1000; // 7 days (IDs change less frequently)
 
   // ---------- small helpers ----------
@@ -626,7 +626,7 @@
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.8.0'
+    version: '1.8.1'
   };
 
   root.PoroSearch = api;
