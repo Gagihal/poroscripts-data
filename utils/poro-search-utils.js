@@ -1,4 +1,4 @@
-// poro-search-utils.js  v1.8.1
+// poro-search-utils.js  v1.8.2
 ;(function (root) {
   'use strict';
 
@@ -12,7 +12,7 @@
   let IDMAP_URL = 'https://raw.githubusercontent.com/gagihal/poroscripts-data/main/utils/product-id-map-v2.json';
   const IDMAP_LS_KEY = 'poro_product_id_map_v5';
   const IDMAP_LS_TS  = 'poro_product_id_map_ts_v5';
-  const IDMAP_CACHE_MS = 7 * 24 * 3600 * 1000; // 7 days (IDs change less frequently)
+  const IDMAP_CACHE_MS = 24 * 3600 * 1000; // 24h (daily updates)
 
   // ---------- small helpers ----------
   const IGNORE = new Set(['full','art','secret','rare','hyper','alternative','alternate','reverse','holo','bs']);
@@ -626,7 +626,7 @@
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.8.1'
+    version: '1.8.2'
   };
 
   root.PoroSearch = api;
