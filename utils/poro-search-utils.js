@@ -1,4 +1,4 @@
-// poro-search-utils.js  v1.7.4
+// poro-search-utils.js  v1.8.0
 ;(function (root) {
   'use strict';
 
@@ -494,6 +494,58 @@
   }
 
   /**
+   * Create a TCGplayer Seller Admin button with ID-based direct link support.
+   * @param {{name:string, setFull:string, number?:string, cardId?:string}} cardData - Card information
+   * @param {object} options - Optional styling and behavior
+   * @param {string} options.text - Button text (default: 'TCGA')
+   * @param {string} options.className - CSS class name
+   * @param {string} options.style - CSS style string
+   * @param {string} options.elementType - Element type: 'button' or 'a' (default: 'button')
+   * @param {boolean} options.showDirectIndicator - Show orange border for direct links (default: true)
+   * @returns {Promise<HTMLElement>} The created button or link
+   */
+  async function createTcgSellerButton(cardData, options = {}) {
+    const { text = 'TCGA', className = '', style = '', showDirectIndicator = true, elementType = 'button' } = options;
+
+    // Try to get TCG product ID from ID mapping (skip if ID is 0 or "0")
+    const hasValidId = cardData.cardId && cardData.cardId !== '0' && cardData.cardId !== 0;
+    const tcgId = hasValidId ? await getTcgId(cardData.cardId) : null;
+
+    // Build direct admin URL if we have a valid TCG ID
+    const directUrl = (tcgId && tcgId !== '0' && tcgId !== 0)
+      ? `https://store.tcgplayer.com/admin/product/manage/${tcgId}`
+      : null;
+
+    // Build search query as fallback using same cleaning as TCG search
+    const query = buildTcgQuery(cardData);
+    const searchUrl = `https://store.tcgplayer.com/admin/product/catalog?SearchValue=${encodeURIComponent(query)}`;
+
+    const btn = document.createElement(elementType);
+    btn.textContent = text;
+    btn.title = directUrl ? 'Direct TCGplayer Seller link' : 'Search in TCGplayer Seller catalog';
+    if (elementType === 'button') {
+      btn.type = 'button';
+    } else {
+      btn.href = '#';
+    }
+    if (className) btn.className = className;
+    if (style) btn.style.cssText = style;
+
+    // Visual indicator for direct link (orange to distinguish from regular TCG)
+    if (showDirectIndicator && directUrl) {
+      btn.style.borderLeft = '3px solid #FF9800'; // Orange for TCG Seller
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const url = directUrl || searchUrl;
+      openNamed(url, 'TCGSellerWindow');
+    });
+
+    return btn;
+  }
+
+  /**
    * Create a Poromagia store manager search button.
    * @param {{name:string, setFull:string}} cardData - Card name and set information
    * @param {object} options - Optional styling and behavior
@@ -569,12 +621,12 @@
     getMcmId, getTcgId, buildMcmDirectUrl, buildTcgDirectUrl,
     getPoroIdFromMcm, getTcgIdFromMcm, getPoroIdFromTcg, getMcmIdFromTcg,
     preloadIdMap, setIdMapUrl,
-    // button creation (v1.4.0: initial, v1.5.0: TCG direct links, v1.6.0: PM button, v1.7.2: removed fallback alert, v1.7.3: elementType support)
-    createTcgButton, createMcmButton, createPmButton, createSearchButtons,
+    // button creation (v1.4.0: initial, v1.5.0: TCG direct links, v1.6.0: PM button, v1.7.2: removed fallback alert, v1.7.3: elementType support, v1.8.0: TCG Seller button)
+    createTcgButton, createMcmButton, createTcgSellerButton, createPmButton, createSearchButtons,
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.7.4'
+    version: '1.8.0'
   };
 
   root.PoroSearch = api;
