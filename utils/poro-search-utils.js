@@ -6,13 +6,13 @@
   let MAP_URL = 'https://raw.githubusercontent.com/gagihal/poroscripts-data/main/utils/mcmsetmap.json';
   const LS_KEY = 'poro_mcm_setabbr_map_v1';
   const LS_TS  = 'poro_mcm_setabbr_map_ts_v1';
-  const CACHE_MS = 24 * 3600 * 1000; // 24h
+  const CACHE_MS = 1 * 3600 * 1000; // 1h
 
   // Product ID mapping (v5 includes improved TCGplayer matching from CardKaikki sheet)
   let IDMAP_URL = 'https://raw.githubusercontent.com/gagihal/poroscripts-data/main/utils/product-id-map-v2.json';
   const IDMAP_LS_KEY = 'poro_product_id_map_v5';
   const IDMAP_LS_TS  = 'poro_product_id_map_ts_v5';
-  const IDMAP_CACHE_MS = 24 * 3600 * 1000; // 24h (daily updates)
+  const IDMAP_CACHE_MS = 1 * 3600 * 1000; // 1h (hourly updates)
 
   // ---------- small helpers ----------
   const IGNORE = new Set(['full','art','secret','rare','hyper','alternative','alternate','reverse','holo','bs']);
