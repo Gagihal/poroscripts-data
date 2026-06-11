@@ -6,6 +6,23 @@ Userscripts for browsing Pokemon cards on Cardmarket seller pages.
 
 ## Scripts
 
+### mcm-cart-seller-highlight.user.js (v1.1)
+Highlights listings from sellers who are already in your shopping cart on single-card product pages.
+
+**URL Patterns:** `*/ShoppingCart*` (sync) and `*/Products/Singles/*` (highlight) — all games, all UI languages.
+
+**Features:**
+- **Cart sync** - Visiting the shopping cart snapshots all cart sellers to localStorage (re-syncs on in-page cart edits)
+- **Row highlight** - Green tint + left stripe + "IN CART" pill next to the seller name on product pages
+- **Optimistic adds** - Clicking a row's cart button marks that seller immediately, no cart revisit needed
+- **Stale notice** - Small corner note when the cart snapshot is missing or older than 24h
+- **Show more results** - Re-scans AJAX-loaded rows via MutationObserver
+
+**Installation:**
+```
+https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/mcm-buy/mcm-cart-seller-highlight.user.js
+```
+
 ### mcm-pkseller-mcmtcg-buttons.user.js (v2.9)
 Adds TCGP and PM buttons next to each card name on seller's Singles page.
 

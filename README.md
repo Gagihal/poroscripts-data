@@ -24,6 +24,9 @@ Install these userscripts via Tampermonkey/Greasemonkey:
 ### Cardmarket Seller Pages (cardmarket.com/*/Pokemon/Users/*/Offers/Singles*)
 - **TCGP/PM buttons**: [mcm-pkseller-mcmtcg-buttons.user.js](https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/mcm-buy/mcm-pkseller-mcmtcg-buttons.user.js)
 
+### Cardmarket Product Pages (cardmarket.com/*/Products/Singles/* + ShoppingCart)
+- **Cart seller highlight**: [mcm-cart-seller-highlight.user.js](https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/mcm-buy/mcm-cart-seller-highlight.user.js)
+
 ## Directory Structure
 
 ```
