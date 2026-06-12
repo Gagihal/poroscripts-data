@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Pokemon Manager – Cart tools (add + inline viewer)
 // @namespace    poroscripts
-// @version      1.2
-// @description  Adds per-row "Add to cart" and a "Show Cart" inline viewer.
+// @version      1.3
+// @description  Adds per-row "Add 1 (X)" button (X = copies already in cart) and a "Show Cart" inline viewer.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng/pokemng-cart.user.js
 // @downloadURL  https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng/pokemng-cart.user.js
@@ -30,6 +30,92 @@
 
   const tbody = table.querySelector('tbody'); if(!tbody) return;
 
+  // ===== cart quantity tracking =====
+  // Basket lines are child products. Key: parent product id (from the
+  // catalogue URL "_<pk>/") + condition (title suffix " - NM/M" etc.).
+  // Store manager rows expose the same parent id in the link-product-card
+  // href (?product_id=) and the condition in td.condition.
+  const CONDITIONS = ['NM/M','DMG','EX','GD','LP','PL','MT','NM']; // NM/M before NM
+
+  let cartCounts = null;          // {byChild: {parent|cond: qty}, byParent: {parent: qty}}
+  const labeledButtons = [];      // {btn, parent, cond}
+  let resyncTimer = null;
+
+  async function fetchCartCounts(){
+    const r = await fetch('/en/basket/', {credentials:'include'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+    const byChild = {}, byParent = {};
+    let rows = doc.querySelectorAll('#basket_formset .basket-items .row');
+    if(!rows.length) rows = doc.querySelectorAll('#basket_formset .row');
+    rows.forEach(row=>{
+      const a = row.querySelector('a[href*="/catalogue/"]');
+      const m = a && (a.getAttribute('href')||'').match(/_(\d+)\/?$/);
+      if(!m) return;
+      const parent = m[1];
+      const qty = parseInt(row.querySelector('input[type="number"]')?.value, 10) || 0;
+      if(!qty) return;
+      byParent[parent] = (byParent[parent]||0) + qty;
+      const title = row.querySelector('h4')?.textContent || '';
+      const cond = title.split(' - ').pop().trim().toUpperCase();
+      if(CONDITIONS.includes(cond)){
+        const k = parent + '|' + cond;
+        byChild[k] = (byChild[k]||0) + qty;
+      }
+    });
+    cartCounts = {byChild, byParent};
+    return cartCounts;
+  }
+
+  function countFor(parent, cond){
+    if(!cartCounts || !parent) return null;
+    if(cond) return cartCounts.byChild[parent + '|' + cond] || 0;
+    return cartCounts.byParent[parent] || 0;
+  }
+
+  function buttonLabel(parent, cond){
+    const n = countFor(parent, cond);
+    return n === null ? 'Add 1' : `Add 1 (${n})`;
+  }
+
+  function relabelAll(){
+    labeledButtons.forEach(({btn, parent, cond})=>{
+      if(btn._flashing) return;
+      btn.textContent = buttonLabel(parent, cond);
+    });
+  }
+
+  function bumpLocal(parent, cond, delta){
+    if(!cartCounts || !parent) return;
+    cartCounts.byParent[parent] = (cartCounts.byParent[parent]||0) + delta;
+    if(cond){
+      const k = parent + '|' + cond;
+      cartCounts.byChild[k] = (cartCounts.byChild[k]||0) + delta;
+    }
+  }
+
+  function scheduleResync(){
+    clearTimeout(resyncTimer);
+    resyncTimer = setTimeout(()=>{
+      fetchCartCounts().then(relabelAll).catch(()=>{});
+    }, 1500);
+  }
+
+  function getRowCartKey(row){
+    // parent product id from the link-product-card href
+    const link = row.querySelector('a[href*="link-product-card"]');
+    const pm = link && (link.getAttribute('href')||'').match(/product_id=(\d+)/);
+    const parent = pm ? pm[1] : null;
+    // condition is the leading text of td.condition (before the rarity <br>)
+    let cond = null;
+    const condCell = row.querySelector('td.condition');
+    if(condCell){
+      const txt = (condCell.textContent||'').trim().toUpperCase();
+      cond = CONDITIONS.find(c=>txt.startsWith(c)) || null;
+    }
+    return { parent, cond };
+  }
+
   function enhanceRows(){
     tbody.querySelectorAll('tr').forEach(row=>{
       if(row._cartBtnDone) return; row._cartBtnDone = true;
@@ -41,10 +127,13 @@
       const targetCell = incomingIdx>0 ? row.querySelector(`td:nth-child(${incomingIdx})`) : idCell;
       if(!targetCell) return;
 
+      const { parent, cond } = getRowCartKey(row);
+
       const cBtn = document.createElement('button');
-      cBtn.textContent='Add to cart';
+      cBtn.textContent = buttonLabel(parent, cond);
       cBtn.className='pm-cart-btn';
       cBtn.style.cssText='display:block;margin:2px;padding:2px;';
+      labeledButtons.push({btn: cBtn, parent, cond});
 
       cBtn.onclick = async ()=>{
         const csrf=getCSRF(); if(!csrf) { alert('CSRF missing'); return; }
@@ -58,9 +147,14 @@
             body:`csrfmiddlewaretoken=${csrf}&quantity=1`
           });
           if(!r.ok) throw new Error('HTTP '+r.status);
-          const old = cBtn.textContent;
+          bumpLocal(parent, cond, 1);
+          cBtn._flashing = true;
           cBtn.textContent='OK';
-          setTimeout(()=>cBtn.textContent=old,1200);
+          setTimeout(()=>{
+            cBtn._flashing = false;
+            cBtn.textContent = buttonLabel(parent, cond);
+          },1200);
+          scheduleResync();
         }catch(e){
           alert('Add failed: '+e);
         }
@@ -72,6 +166,9 @@
 
   enhanceRows();
   new MutationObserver(enhanceRows).observe(tbody,{childList:true,subtree:true});
+
+  // initial cart sync → label buttons with current quantities
+  fetchCartCounts().then(relabelAll).catch(e=>console.warn('[PM-Cart] basket sync failed:', e));
 
   // Inline cart viewer
   const content = document.getElementById('content');
