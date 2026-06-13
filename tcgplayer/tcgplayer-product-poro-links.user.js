@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TCGplayer → Poro Links (MCM / PM / TCGA floating box)
 // @namespace    poroscripts
-// @version      1.0
+// @version      1.1
 // @description  Floating corner box on TCGplayer single-card pages with buttons to the matching Cardmarket, Poromagia Store Manager and TCGplayer Seller Admin pages.
 // @match        https://www.tcgplayer.com/product/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
@@ -55,19 +55,43 @@
         document.body.appendChild(box);
     }
 
-    // ----- parse current product from URL + document.title -----
+    // ----- parse current product from URL + product header DOM -----
     function getTcgId() {
         const m = location.pathname.match(/\/product\/(\d+)/);
         return m ? m[1] : null;
     }
-    function parseTitle() {
-        let t = (document.title || '').replace(/\s*-\s*TCGplayer\.com\s*$/i, '');
-        const parts = t.split(' - ');
-        if (parts.length >= 2) parts.pop(); // drop trailing product line ("Pokemon")
+
+    // Wait until the product header has rendered (SPA loads it after navigation).
+    function waitForHeader(timeoutMs = 6000) {
+        return new Promise((resolve) => {
+            const sel = '[data-testid="lblProductDetailsProductName"]';
+            if (document.querySelector(sel)) return resolve(document.querySelector(sel));
+            const t0 = Date.now();
+            const iv = setInterval(() => {
+                const el = document.querySelector(sel);
+                if (el || Date.now() - t0 > timeoutMs) {
+                    clearInterval(iv);
+                    resolve(el || null);
+                }
+            }, 150);
+        });
+    }
+
+    // Read name/number/set from the header DOM — reliable, unlike document.title
+    // which is still the generic landing title when the box first builds.
+    function parseProduct(h1) {
+        const setEl = document.querySelector('[data-testid="lblProductDetailsSetName"]');
+        const setFull = setEl ? (setEl.textContent || '').trim() : '';
+        let h1t = h1 ? (h1.textContent || '').trim() : '';
+        // h1 = "<name> - <number...> - <setName> (<rarity>)" — drop from the set name on
+        if (setFull) {
+            const idx = h1t.indexOf(' - ' + setFull);
+            if (idx > 0) h1t = h1t.slice(0, idx);
+        }
+        const parts = h1t.split(' - ');
         const name = parts.shift() || '';
-        const numRaw = parts.shift() || '';
+        const numRaw = parts.join(' - ');
         const number = numRaw.split(' (')[0].trim();
-        const setFull = parts.join(' - ');
         return { name: PoroSearch.sanitize(name), number, setFull };
     }
 
@@ -91,7 +115,8 @@
         lastTcgId = tcgId;
 
         ensureBox();
-        const { name, number, setFull } = parseTitle();
+        const h1 = await waitForHeader();
+        const { name, number, setFull } = parseProduct(h1);
 
         // TCG ID is authoritative here → reverse-resolve to Poro/MCM
         const poroId = await PoroSearch.getPoroIdFromTcg(tcgId);
