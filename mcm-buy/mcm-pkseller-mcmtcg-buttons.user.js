@@ -2,8 +2,8 @@
 // ==UserScript==
 // @name         Cardmarket → Quick Links for Pokemon Sellers (TCGP + PM)
 // @namespace    cm-links
-// @version      2.9
-// @description  Adds TCGP and PM buttons next to each card name on a seller's Singles page (updated: improved TCG ID matching)
+// @version      2.10
+// @description  Adds TCGP, TCGA and PM buttons next to each card name on a seller's Singles page (updated: improved TCG ID matching)
 // @match        https://www.cardmarket.com/*/Pokemon/Users/*/Offers/Singles*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/mcm-buy/mcm-pkseller-mcmtcg-buttons.user.js
@@ -161,6 +161,13 @@
             style: PILL_STYLE
         });
 
+        // Create TCGA (TCGplayer Seller Admin) button — same cardData/Poro ID
+        const tcgSellerBtn = await PoroSearch.createTcgSellerButton(cardData, {
+            text: 'TCGA',
+            elementType: 'a',
+            style: PILL_STYLE
+        });
+
         // Create PM button using utility with mapped set name
         const pmBtn = PoroSearch.createPmButton(pmCardData, {
             text: 'PM',
@@ -172,6 +179,7 @@
         const btnContainer = document.createElement('span');
         btnContainer.style.cssText = BUTTON_CONTAINER_STYLE;
         btnContainer.appendChild(tcgBtn);
+        btnContainer.appendChild(tcgSellerBtn);
         btnContainer.appendChild(pmBtn);
 
         // Get the parent cell and make it flexbox to push buttons right
