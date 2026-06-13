@@ -81,8 +81,10 @@ def main():
         if e:
             merged[cid] = e
 
+    # indent=2 + sorted keys: matches the existing file and keeps future
+    # regenerations diff-reviewable (real per-card changes, not a full rewrite).
     with open(MAP_PATH, "w", encoding="utf-8") as f:
-        json.dump(merged, f, separators=(",", ":"), sort_keys=True)
+        json.dump(merged, f, indent=2, sort_keys=True)
 
     mcm = sum(1 for v in merged.values() if v.get("mcmId"))
     tcg = sum(1 for v in merged.values() if v.get("tcgId"))
