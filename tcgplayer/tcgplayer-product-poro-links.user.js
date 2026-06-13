@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TCGplayer → Poro Links (MCM / PM / TCGA floating box)
 // @namespace    poroscripts
-// @version      1.1
+// @version      1.2
 // @description  Floating corner box on TCGplayer single-card pages with buttons to the matching Cardmarket, Poromagia Store Manager and TCGplayer Seller Admin pages.
 // @match        https://www.tcgplayer.com/product/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
@@ -16,6 +16,40 @@
     "use strict";
 
     PoroSearch.preloadIdMap().catch(() => {});
+
+    // ----- TCGplayer set name -> Poromagia set name map (for PM search fallback) -----
+    // Poromagia's store manager filters with set__name__icontains, and TCG set names
+    // often differ ("Crystal Guardians" vs "EX Crystal Guardians", "SM Promos" vs
+    // "Sun & Moon Promos"), so we translate before building the PM search link.
+    const SETMAP_URL = 'https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/tcg-to-poromagia-setmap.json';
+    const SETMAP_CACHE_KEY = 'tcg_poro_setmap';
+    const SETMAP_CACHE_TS_KEY = 'tcg_poro_setmap_ts';
+    const SETMAP_CACHE_MS = 7 * 24 * 3600 * 1000;
+    let setMap = null;
+
+    async function loadSetMap() {
+        try {
+            const ts = parseInt(localStorage.getItem(SETMAP_CACHE_TS_KEY) || '0', 10);
+            if (ts && Date.now() - ts < SETMAP_CACHE_MS) {
+                const cached = localStorage.getItem(SETMAP_CACHE_KEY);
+                if (cached) { setMap = JSON.parse(cached); return; }
+            }
+        } catch (e) {}
+        try {
+            const r = await fetch(SETMAP_URL);
+            if (r.ok) {
+                setMap = await r.json();
+                try {
+                    localStorage.setItem(SETMAP_CACHE_KEY, JSON.stringify(setMap));
+                    localStorage.setItem(SETMAP_CACHE_TS_KEY, String(Date.now()));
+                } catch (e) {}
+            }
+        } catch (e) { console.warn('[PoroTCG] set map load failed:', e); }
+    }
+    function mapSet(tcgSet) {
+        if (!setMap || !tcgSet) return tcgSet;
+        return setMap[tcgSet] || tcgSet;
+    }
 
     const BTN_STYLE = `
         display:inline-block;
@@ -142,7 +176,7 @@
             pmTitle = 'Poromagia Store Manager (product ' + poroId + ')';
             pmBorder = '#9C27B0';
         } else {
-            pmHref = PoroSearch.buildPmUrl({ name, setFull });
+            pmHref = PoroSearch.buildPmUrl({ name, setFull: mapSet(setFull) });
             pmTitle = 'Search Poromagia Store Manager';
             pmBorder = null;
         }
@@ -157,7 +191,7 @@
     }
 
     // ----- run now + follow SPA navigation -----
-    rebuild();
+    loadSetMap().finally(rebuild);
 
     const wrap = (type) => {
         const orig = history[type];
