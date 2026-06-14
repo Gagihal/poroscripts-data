@@ -33,6 +33,10 @@ DB = ["docker", "exec", "db", "mysql", "-u", "poromysqluser", "-pporomysqlpwd",
       "poromysqldb", "-N", "-e"]
 HERE = os.path.dirname(os.path.abspath(__file__))
 MAP_PATH = os.path.join(HERE, "product-id-map-v2.json")
+# Companion map for the poromagia.com basket page, which exposes the parent
+# catalogue product id (in the /catalogue/<slug>_<PK>/ URL) rather than the
+# pokemon_card id. parent_product_id is UNIQUE -> 1:1 to a card.
+PARENT_MAP_PATH = os.path.join(HERE, "parent-product-to-card.json")
 
 
 def q(sql):
@@ -101,12 +105,21 @@ def main():
     with open(MAP_PATH, "w", encoding="utf-8") as f:
         json.dump(merged, f, indent=2, sort_keys=True)
 
+    # Companion: parent catalogue product id -> card id (for the basket page)
+    parent_map = {}
+    for cid, ppid in q("SELECT id, parent_product_id FROM pokemon_card "
+                       "WHERE parent_product_id IS NOT NULL;"):
+        parent_map[ppid] = cid
+    with open(PARENT_MAP_PATH, "w", encoding="utf-8") as f:
+        json.dump(parent_map, f, indent=2, sort_keys=True)
+
     mcm = sum(1 for v in merged.values() if v.get("mcmId"))
     tcg = sum(1 for v in merged.values() if v.get("tcgId"))
     print(f"entries: {len(merged)} (+{new_cards} new cards)")
     print(f"with MCM: {mcm}")
     print(f"with TCG: {tcg} ({tcg_filled} filled incl. '0' placeholders; "
           f"{tcg_flipped} Base Set shadowless->unlimited; other existing ids kept)")
+    print(f"parent-product->card entries: {len(parent_map)}")
 
 
 if __name__ == "__main__":
