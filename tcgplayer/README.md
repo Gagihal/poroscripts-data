@@ -1,10 +1,23 @@
 # TCGplayer Scripts
 
-Userscripts for TCGplayer product pages.
+Userscripts for TCGplayer product + Seller Admin pages.
 
-**URL Pattern:** `https://www.tcgplayer.com/product/*`
+**URL Patterns:** `https://www.tcgplayer.com/product/*` · `https://store.tcgplayer.com/admin/product/manage/*`
 
 ## Scripts
+
+### tcgplayer-admin-card-notes.user.js (v1.0)
+Floating "Card notes" box (bottom-right) on the Seller Admin product page
+(`store.tcgplayer.com/admin/product/manage/<id>`). A single **shared** free-text note per card
+(pricing rationale, decisions), stored on the Poromagia hub so every user with the script sees the
+same note. Shows the last editor's initials (set once per browser via `GM_setValue`). Talks to
+`https://os.poromagia.com/api/card-notes/<id>` via `GM_xmlhttpRequest` (no CORS/SSO needed).
+Ctrl/Cmd+Enter saves. Updates as you navigate between products (SPA-aware).
+
+**Installation:**
+```
+https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/tcgplayer/tcgplayer-admin-card-notes.user.js
+```
 
 ### tcgplayer-product-poro-links.user.js (v1.0)
 Adds a small persistent floating box (bottom-right corner) on single-card product pages with
