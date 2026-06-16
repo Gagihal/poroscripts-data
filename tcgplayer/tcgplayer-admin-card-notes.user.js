@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         TCGplayer Seller Admin → Shared Card Notes
 // @namespace    poroscripts
-// @version      1.1
-// @description  Minimizable notes box on the TCGplayer Seller Admin product page. Starts minimized; click to open. Notes are shared via the Poromagia hub so every user with the script sees them.
+// @version      1.2
+// @description  Minimizable notes box on the TCGplayer Seller Admin product page. Opens automatically when the card has a note, otherwise starts minimized. Notes are shared via the Poromagia hub so every user with the script sees them.
 // @match        https://store.tcgplayer.com/admin/product/manage/*
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/tcgplayer/tcgplayer-admin-card-notes.user.js
 // @downloadURL  https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/tcgplayer/tcgplayer-admin-card-notes.user.js
@@ -174,6 +174,8 @@
         area.value = (rec && rec.note) || '';
         status.textContent = metaLine(rec);
         updatePill(rec);
+        // Start open if this card already has a note, otherwise stay minimized.
+        setExpanded(!!(rec && rec.note && rec.note.trim()));
     }
 
     async function save() {
