@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         TCGplayer Seller Admin → Shared Card Notes
 // @namespace    poroscripts
-// @version      1.0
-// @description  Floating notes box on the TCGplayer Seller Admin product page. Notes are shared via the Poromagia hub so every user with the script sees them.
+// @version      1.1
+// @description  Minimizable notes box on the TCGplayer Seller Admin product page. Starts minimized; click to open. Notes are shared via the Poromagia hub so every user with the script sees them.
 // @match        https://store.tcgplayer.com/admin/product/manage/*
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/tcgplayer/tcgplayer-admin-card-notes.user.js
 // @downloadURL  https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/tcgplayer/tcgplayer-admin-card-notes.user.js
@@ -47,10 +47,43 @@
     }
 
     // --- the box (built once, contents refreshed per product) ---
-    let box, area, status, saveBtn, currentId = null, dirty = false;
+    let box, pill, area, status, saveBtn, currentId = null, dirty = false, expanded = false;
+
+    function setExpanded(v) {
+        expanded = v;
+        if (!box) return;
+        box.style.display = v ? 'block' : 'none';
+        pill.style.display = v ? 'none' : 'block';
+        if (v) area.focus();
+    }
+
+    // The minimized pill turns green with a dot when the current card has a note,
+    // so you can tell there's something to read without opening it.
+    function updatePill(rec) {
+        if (!pill) return;
+        const has = !!(rec && rec.note && rec.note.trim());
+        pill.textContent = has ? '📝 Card notes ●' : '📝 Card notes';
+        pill.style.color = has ? '#3fb950' : '#8b93a7';
+        pill.style.borderColor = has ? '#2ea043' : '#3a3f4b';
+        pill.title = (has ? 'This card has a note' : 'No note yet') + ' — click to open';
+    }
 
     function ensureBox() {
         if (box) return;
+
+        // minimized pill (default state)
+        pill = document.createElement('div');
+        pill.id = 'poro-card-notes-pill';
+        pill.style.cssText = `
+            position:fixed; bottom:16px; right:16px; z-index:999999;
+            background:rgba(20,22,28,0.97); border:1px solid #3a3f4b; border-radius:8px;
+            padding:6px 12px; box-shadow:0 2px 10px rgba(0,0,0,0.5);
+            font:11px/1 sans-serif; color:#8b93a7; cursor:pointer; user-select:none;
+            text-transform:uppercase; letter-spacing:.5px;`;
+        pill.textContent = '📝 Card notes';
+        pill.onclick = () => setExpanded(true);
+        document.body.appendChild(pill);
+
         box = document.createElement('div');
         box.id = 'poro-card-notes';
         box.style.cssText = `
@@ -64,12 +97,20 @@
         const label = document.createElement('span');
         label.textContent = 'Card notes';
         label.style.cssText = 'font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#8b93a7;';
+        const right = document.createElement('span');
+        right.style.cssText = 'display:flex;align-items:center;gap:8px;';
         const who = document.createElement('span');
         who.id = 'poro-note-who';
         who.title = 'Your initials (click to change)';
         who.style.cssText = 'font-size:10px;color:#6b7280;cursor:pointer;';
         who.onclick = () => { setInitials(true); };
-        head.appendChild(label); head.appendChild(who);
+        const collapse = document.createElement('span');
+        collapse.textContent = '–';
+        collapse.title = 'Minimize';
+        collapse.style.cssText = 'font-size:16px;line-height:1;color:#8b93a7;cursor:pointer;padding:0 2px;';
+        collapse.onclick = () => setExpanded(false);
+        right.appendChild(who); right.appendChild(collapse);
+        head.appendChild(label); head.appendChild(right);
 
         area = document.createElement('textarea');
         area.placeholder = 'Notes on pricing / choices for this card…';
@@ -94,6 +135,7 @@
         foot.appendChild(status); foot.appendChild(saveBtn);
 
         box.appendChild(head); box.appendChild(area); box.appendChild(foot);
+        box.style.display = 'none';   // start minimized — the pill is the entry point
         document.body.appendChild(box);
         refreshWho();
     }
@@ -131,6 +173,7 @@
         if (currentId !== tcgId) return;
         area.value = (rec && rec.note) || '';
         status.textContent = metaLine(rec);
+        updatePill(rec);
     }
 
     async function save() {
@@ -141,7 +184,7 @@
         status.textContent = 'Saving…';
         const rec = await apiSave(tcgId, area.value, author);
         saveBtn.disabled = false;
-        if (rec) { dirty = false; status.textContent = '✓ ' + metaLine(rec); }
+        if (rec) { dirty = false; status.textContent = '✓ ' + metaLine(rec); updatePill(rec); }
         else { status.textContent = '⚠ save failed — try again'; }
     }
 

@@ -6,13 +6,14 @@ Userscripts for TCGplayer product + Seller Admin pages.
 
 ## Scripts
 
-### tcgplayer-admin-card-notes.user.js (v1.0)
-Floating "Card notes" box (bottom-right) on the Seller Admin product page
-(`store.tcgplayer.com/admin/product/manage/<id>`). A single **shared** free-text note per card
-(pricing rationale, decisions), stored on the Poromagia hub so every user with the script sees the
-same note. Shows the last editor's initials (set once per browser via `GM_setValue`). Talks to
-`https://os.poromagia.com/api/card-notes/<id>` via `GM_xmlhttpRequest` (no CORS/SSO needed).
-Ctrl/Cmd+Enter saves. Updates as you navigate between products (SPA-aware).
+### tcgplayer-admin-card-notes.user.js (v1.1)
+Minimizable "Card notes" box (bottom-right) on the Seller Admin product page
+(`store.tcgplayer.com/admin/product/manage/<id>`). **Starts minimized** as a small pill — click to
+open, "–" to collapse. The pill turns green with a dot ● when the current card already has a note.
+A single **shared** free-text note per card (pricing rationale, decisions), stored on the Poromagia
+hub so every user with the script sees the same note. Shows the last editor's initials (set once per
+browser via `GM_setValue`). Talks to `https://os.poromagia.com/api/card-notes/<id>` via
+`GM_xmlhttpRequest` (no CORS/SSO needed). Ctrl/Cmd+Enter saves. SPA-aware.
 
 **Installation:**
 ```
