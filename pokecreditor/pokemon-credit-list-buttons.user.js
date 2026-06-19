@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Poromagia Pokémon Credit list — MCM/TCG/TCGA buttons
 // @namespace    poroscripts
-// @version      1.0
-// @description  Adds MCM, TCG and TCGA buttons to each card row on the Pokémon credit (buylist) page, under the card name. Direct product links via ID mapping, search fallback otherwise.
+// @version      1.1
+// @description  Adds compact M / T / A buttons inline after each card name on the Pokémon credit (buylist) page. Direct product links via ID mapping, search fallback otherwise.
 // @match        https://poromagia.com/*pokemon_credit*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokecreditor/pokemon-credit-list-buttons.user.js
@@ -17,9 +17,9 @@
 
   PoroSearch.preloadIdMap().catch(() => {});
 
-  // Same small style as the store-manager buttons (v5.12). The helpers add a
-  // coloured left-border direct-link indicator on top of this.
-  const BTN_STYLE = 'display:inline-block;margin:0;padding:2px 7px;font-size:10px;line-height:1.35;';
+  // Compact inline pills placed right after the card name (so the row doesn't
+  // grow taller). The helpers add a coloured left-border direct-link indicator.
+  const BTN_STYLE = 'display:inline-block;margin:0 0 0 4px;padding:0 5px;font-size:9px;line-height:1.4;vertical-align:middle;';
 
   // The credit row's `item` IS the pokemon_card, so item.id is the Poro card id
   // (the key product-id-map-v2.json uses). It lives in the quickcredit form's
@@ -63,26 +63,28 @@
     };
 
     const { tcgButton, mcmButton } = await PoroSearch.createSearchButtons(cardData, {
-      tcgText: 'TCG',
-      mcmText: 'MCM',
+      tcgText: 'T',
+      mcmText: 'M',
       tcgClassName: 'pm-tcg-btn',
       mcmClassName: 'pm-mcm-btn',
       tcgStyle: BTN_STYLE,
       mcmStyle: BTN_STYLE
     });
     const tcgSellerButton = await PoroSearch.createTcgSellerButton(cardData, {
-      text: 'TCGA',
+      text: 'A',
       className: 'pm-tcgseller-btn',
       style: BTN_STYLE
     });
 
-    const bar = document.createElement('div');
-    bar.className = 'poro-credit-btns';
-    bar.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;justify-content:center;';
-    bar.appendChild(tcgSellerButton); // TCGA
-    bar.appendChild(mcmButton);       // MCM
-    bar.appendChild(tcgButton);       // TCG
-    nameCell.appendChild(bar);
+    // Inline, straight after the card name in M / T / A order — keeps row height.
+    const ordered = [mcmButton, tcgButton, tcgSellerButton];
+    const anchor = nameCell.querySelector('a');
+    if (anchor) {
+      let ref = anchor;
+      for (const b of ordered) { ref.insertAdjacentElement('afterend', b); ref = b; }
+    } else {
+      ordered.forEach((b) => nameCell.appendChild(b));
+    }
   }
 
   function scanAll() {
