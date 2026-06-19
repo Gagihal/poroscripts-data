@@ -1,10 +1,23 @@
 # Pokemon Creditor List Scripts
 
-Userscripts for the Poromagia Creditor List admin interface.
+Userscripts for the Poromagia creditor / buylist interfaces.
 
-**URL Pattern:** `https://poromagia.com/*/admin/pokemon/creditorderitem/*`
+**URL Patterns:** `https://poromagia.com/*/admin/pokemon/creditorderitem/*` (admin list) ·
+`https://poromagia.com/*pokemon_credit*` (customer-facing credit/buylist list)
 
 ## Scripts
+
+### pokemon-credit-list-buttons.user.js (v1.0)
+Adds **MCM / TCG / TCGA** buttons to each card row on the Pokémon credit (buylist) page
+(`poromagia.com/pokemon_credit/`), in a small row under the card name. The row's `item` is the
+pokemon_card, so the card id (the id-map key) comes straight from the quickcredit form's
+`input[name="card"]`; direct product / Seller Admin / Cardmarket links when mapped, search fallback
+otherwise. Re-enhances after DataTables filter/pagination redraws.
+
+**Installation:**
+```
+https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokecreditor/pokemon-credit-list-buttons.user.js
+```
 
 ### pokecreditor-mcmtcg-buttons.user.js (v2.9)
 Adds compact T and M buttons after the Condition column.
