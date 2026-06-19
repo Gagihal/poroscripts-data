@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Poromagia Pokémon Credit list — MCM/TCG/TCGA buttons
+// @name         Poromagia Pokémon Credit list — TCG/TCGA buttons
 // @namespace    poroscripts
-// @version      1.1
-// @description  Adds compact M / T / A buttons inline after each card name on the Pokémon credit (buylist) page. Direct product links via ID mapping, search fallback otherwise.
+// @version      1.2
+// @description  Adds compact T / A buttons (TCGplayer + Seller Admin) inline after each card name on the Pokémon credit (buylist) page. The name itself already links to Cardmarket. Direct links via ID mapping, search fallback otherwise.
 // @match        https://poromagia.com/*pokemon_credit*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokecreditor/pokemon-credit-list-buttons.user.js
@@ -62,13 +62,10 @@
       cardId: cardId
     };
 
-    const { tcgButton, mcmButton } = await PoroSearch.createSearchButtons(cardData, {
-      tcgText: 'T',
-      mcmText: 'M',
-      tcgClassName: 'pm-tcg-btn',
-      mcmClassName: 'pm-mcm-btn',
-      tcgStyle: BTN_STYLE,
-      mcmStyle: BTN_STYLE
+    const tcgButton = await PoroSearch.createTcgButton(cardData, {
+      text: 'T',
+      className: 'pm-tcg-btn',
+      style: BTN_STYLE
     });
     const tcgSellerButton = await PoroSearch.createTcgSellerButton(cardData, {
       text: 'A',
@@ -76,8 +73,9 @@
       style: BTN_STYLE
     });
 
-    // Inline, straight after the card name in M / T / A order — keeps row height.
-    const ordered = [mcmButton, tcgButton, tcgSellerButton];
+    // Inline, straight after the card name in T / A order — keeps row height.
+    // (No M: the card name itself already links to Cardmarket for staff.)
+    const ordered = [tcgButton, tcgSellerButton];
     const anchor = nameCell.querySelector('a');
     if (anchor) {
       let ref = anchor;
