@@ -6,13 +6,16 @@ Userscripts for the Poromagia Store Manager interface.
 
 ## Scripts
 
-### pokemng-mcmtcg-buttons-id.user.js (v5.9)
-Adds MCM and TCG buttons to each card row.
+### pokemng-mcmtcg-buttons-id.user.js (v5.11) — MCM / TCG / TCGA (combined)
+Adds three buttons per card row, one per column: **TCGA** in the Hidden column, **MCM** in the
+Autohide column, **TCG** in the ID column (the 🔥 removal column is skipped). Combines the old
+mcmtcg + tcgseller scripts into one.
 
 **Features:**
 - **MCM button** - Opens Cardmarket product page (green border = direct link)
 - **TCG button** - Opens TCGplayer product page (blue border = direct link)
-- **Automatic search** - Opens both sites automatically when filter form is submitted
+- **TCGA button** - Opens TCGplayer Seller Admin (`store.tcgplayer.com/admin/product/manage/{tcgId}`; orange border = direct link)
+- **Automatic search** - Opens all three sites automatically when the filter form is submitted
 - **NO CARD handling** - Skips invalid rows, finds first valid card for auto-search
 
 **Installation:**
@@ -20,20 +23,9 @@ Adds MCM and TCG buttons to each card row.
 https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng/pokemng-mcmtcg-buttons-id.user.js
 ```
 
-### pokemng-tcgseller-button.user.js (v1.2)
-Adds TCGA button for TCGplayer Seller Admin access.
-
-**Features:**
-- **TCGA button** - Opens TCGplayer Seller Admin page (orange border = direct link)
-- **Direct URL:** `store.tcgplayer.com/admin/product/manage/{tcgId}`
-- **Fallback URL:** `store.tcgplayer.com/admin/product/catalog?SearchValue={query}`
-- **Automatic search** - Opens Seller Admin when filter form is submitted
-- **NO CARD handling** - Skips invalid rows
-
-**Installation:**
-```
-https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng/pokemng-tcgseller-button.user.js
-```
+### pokemng-tcgseller-button.user.js — DEPRECATED
+Merged into the combined script above. This is now a no-op stub so installed copies auto-update and
+stop adding a duplicate TCGA button; safe to delete from Tampermonkey.
 
 **Note:** This is a separate script for selective distribution (seller access only).
 

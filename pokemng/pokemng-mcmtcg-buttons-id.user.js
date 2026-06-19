@@ -1,13 +1,14 @@
 // ==UserScript==
-// @name         Poromagia Store Manager — MCM/TCG buttons (ID-based direct links)
+// @name         Poromagia Store Manager — MCM/TCG/TCGA buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      5.10
-// @description  Adds MCM and TCG buttons using direct product ID links (updated: improved TCG ID matching). Automatic search skips NO CARD rows to find first valid card.
+// @version      5.11
+// @description  Adds MCM, TCG and TCGA buttons (one per column: Hidden / Autohide / ID) using direct product ID links. Auto-opens the tabs on filter submit. Combines the old mcmtcg + tcgseller scripts.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng/pokemng-mcmtcg-buttons-id.user.js
 // @downloadURL  https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokemng/pokemng-mcmtcg-buttons-id.user.js
 // @connect      raw.githubusercontent.com
+// @run-at       document-idle
 // @grant        none
 // ==/UserScript==
 
@@ -27,59 +28,65 @@
   // Flag to trigger automatic search when first row is enhanced
   let pendingAutoSearch = false;
 
-  // ----- Helper: open MCM/TCG tabs using card data (with ID-based direct links) -----
-  async function openSearchTabs(cardData) {
-    if (DEBUG) console.log('[openSearchTabs] cardData:', cardData);
+  // Per-button style — small; placed one per column. The button helpers add a
+  // coloured left-border direct-link indicator on top of this.
+  const BTN_STYLE = 'display:block;margin:3px auto 0;padding:1px 5px;font-size:9px;line-height:1.3;';
 
-    // Try to build direct URLs using the utility functions
-    const mcmDirectUrl = cardData.cardId ? await PoroSearch.buildMcmDirectUrl(cardData.cardId) : null;
-    const tcgDirectUrl = cardData.cardId ? await PoroSearch.buildTcgDirectUrl(cardData.cardId) : null;
+  // ----- Helper: open MCM + TCG + TCGA tabs using card data (direct links or search) -----
+  async function openAllTabs(cardData) {
+    if (DEBUG) console.log('[openAllTabs] cardData:', cardData);
 
-    if (DEBUG) console.log('[openSearchTabs] mcmDirectUrl:', mcmDirectUrl);
-    if (DEBUG) console.log('[openSearchTabs] tcgDirectUrl:', tcgDirectUrl);
+    const hasValidId = cardData.cardId && cardData.cardId !== '0' && cardData.cardId !== 0;
+    const mcmDirectUrl = hasValidId ? await PoroSearch.buildMcmDirectUrl(cardData.cardId) : null;
+    const tcgDirectUrl = hasValidId ? await PoroSearch.buildTcgDirectUrl(cardData.cardId) : null;
+    const tcgId        = hasValidId ? await PoroSearch.getTcgId(cardData.cardId) : null;
 
-    // Build URLs - direct if we have them, otherwise search
-    let mcmURL, tcgURL;
-
+    // MCM
+    let mcmURL;
     if (mcmDirectUrl) {
       mcmURL = mcmDirectUrl;
     } else {
-      // Fallback to search - buildMcmQuery is async and returns {primary, backup}
       const mcmQueryObj = await PoroSearch.buildMcmQuery(cardData);
       const mcmQ = mcmQueryObj.primary || mcmQueryObj.backup || cardData.name;
-      if (DEBUG) console.log('[openSearchTabs] MCM fallback to search, query:', mcmQ);
       mcmURL = `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(mcmQ)}`;
     }
 
+    // TCG (public product page)
+    let tcgURL;
     if (tcgDirectUrl) {
       tcgURL = tcgDirectUrl;
     } else {
-      // Fallback to search - buildTcgQuery is sync and returns a string
       const tcgQ = PoroSearch.buildTcgQuery(cardData);
-      if (DEBUG) console.log('[openSearchTabs] TCG fallback to search, query:', tcgQ);
       tcgURL = `https://www.tcgplayer.com/search/pokemon/product?Language=English&ProductTypeName=Cards&productLineName=pokemon&q=${encodeURIComponent(tcgQ)}&view=grid`;
     }
 
-    if (DEBUG) console.log('[openSearchTabs] Final URLs - MCM:', mcmURL, 'TCG:', tcgURL);
+    // TCGA (Seller Admin)
+    let sellerURL;
+    if (tcgId && tcgId !== '0' && tcgId !== 0) {
+      sellerURL = `https://store.tcgplayer.com/admin/product/manage/${tcgId}`;
+    } else {
+      const q = PoroSearch.buildTcgQuery(cardData);
+      sellerURL = `https://store.tcgplayer.com/admin/product/catalog?SearchValue=${encodeURIComponent(q)}`;
+    }
+
+    if (DEBUG) console.log('[openAllTabs] URLs:', { mcmURL, tcgURL, sellerURL });
     PoroSearch.openNamed(mcmURL, 'MCMWindow');
     PoroSearch.openNamed(tcgURL, 'TCGWindow');
+    PoroSearch.openNamed(sellerURL, 'TCGSellerWindow');
   }
-
-  // Toolbar button removed - deprecated in favor of automatic search on filter submit
 
   // ----- per-row buttons -----
   async function enhanceRows(){
-    // process rows sequentially so we can await query-builders cleanly
     let autoSearchTriggered = false;
     for (const row of tbody.querySelectorAll('tr')){
-      if (row._pmMcmTcgDone) continue;
+      if (row._pmBtnsDone) continue;
 
       const nameCell = row.querySelector('td.name');
       const setCell  = row.querySelector('td:nth-child(6)');
       const idCell   = row.querySelector('td:nth-child(4)');
       // Card ID is in the cell with link-product-card link
       const cardIdCell = row.querySelector('td a[href*="link-product-card"]')?.parentElement;
-      if (!nameCell || !setCell || !idCell || !cardIdCell) { row._pmMcmTcgDone = true; continue; }
+      if (!nameCell || !setCell || !idCell || !cardIdCell) { row._pmBtnsDone = true; continue; }
 
       const rawName = nameCell.textContent || '';
       const setFull = (setCell.textContent || '').trim();
@@ -88,39 +95,35 @@
       const { name, num } = PoroSearch.splitNameNum(rawName);
       const cleanName = PoroSearch.sanitize(name);
 
-      // Parse card data
-      const cardData = {
-        name: cleanName,
-        setFull: setFull,
-        number: num,
-        cardId: cardId
-      };
+      const cardData = { name: cleanName, setFull: setFull, number: num, cardId: cardId };
 
-      // Use the new utility to create both buttons
+      // Create all three buttons
       const { tcgButton, mcmButton } = await PoroSearch.createSearchButtons(cardData, {
         tcgText: 'TCG',
         mcmText: 'MCM',
         tcgClassName: 'pm-tcg-btn',
         mcmClassName: 'pm-mcm-btn',
-        tcgStyle: 'margin:0;padding:1px 5px;font-size:9px;line-height:1.3;',
-        mcmStyle: 'margin:0;padding:1px 5px;font-size:9px;line-height:1.3;'
+        tcgStyle: BTN_STYLE,
+        mcmStyle: BTN_STYLE
+      });
+      const tcgSellerButton = await PoroSearch.createTcgSellerButton(cardData, {
+        text: 'TCGA',
+        className: 'pm-tcgseller-btn',
+        style: BTN_STYLE
       });
 
-      // Shared horizontal row in the id cell (both store-manager scripts append here)
-      let btnBar = idCell.querySelector('.poro-id-btns');
-      if (!btnBar) {
-        btnBar = document.createElement('div');
-        btnBar.className = 'poro-id-btns';
-        btnBar.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;';
-        idCell.appendChild(btnBar);
-      }
-      btnBar.appendChild(mcmButton);
-      btnBar.appendChild(tcgButton);
+      // Spread one button per column: Hidden / Autohide / ID (skip the 🔥 column).
+      // These cells have rowspan and exist only on a stock-record group's primary
+      // row; fall back to the id cell if a target cell isn't present.
+      const hiddenCell   = row.querySelector('td.product-hidden');
+      const autohideCell = row.querySelector('td.autohide');
+      (hiddenCell   || idCell).appendChild(tcgSellerButton); // TCGA → Hidden
+      (autohideCell || idCell).appendChild(mcmButton);       // MCM  → Autohide
+      idCell.appendChild(tcgButton);                          // TCG  → ID
 
-      row._pmMcmTcgDone = true;
+      row._pmBtnsDone = true;
 
-      // If we have a pending auto-search and haven't triggered it yet
-      // Skip rows with "NO CARD" and find the first valid card
+      // Pending auto-search after a filter: open tabs for the first valid card
       if (pendingAutoSearch && !autoSearchTriggered) {
         if (cardId === 'NO CARD') {
           if (DEBUG) console.log('[enhanceRows] Skipping NO CARD row');
@@ -129,8 +132,7 @@
         if (DEBUG) console.log('[enhanceRows] Auto-searching first valid card');
         pendingAutoSearch = false;
         autoSearchTriggered = true;
-        // Trigger the automatic search with this row's data
-        await openSearchTabs(cardData);
+        await openAllTabs(cardData);
       }
     }
   }
@@ -146,10 +148,9 @@
   new MutationObserver(() => { safeEnhance(); })
     .observe(tbody, { childList: true, subtree: true });
 
-  // ----- filter form: open both tabs on submit -----
-  document.getElementById('filterer')?.addEventListener('submit', (e) => {
+  // ----- filter form: open the tabs on submit -----
+  document.getElementById('filterer')?.addEventListener('submit', () => {
     if (DEBUG) console.log('[Filter Submit] Setting auto-search flag');
-    // Set flag - when the first row is enhanced, it will trigger the automatic search
     pendingAutoSearch = true;
   });
 })();
