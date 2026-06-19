@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — MCM/TCG/TCGA buttons (ID-based direct links)
 // @namespace    poroscripts
-// @version      5.11
+// @version      5.12
 // @description  Adds MCM, TCG and TCGA buttons (one per column: Hidden / Autohide / ID) using direct product ID links. Auto-opens the tabs on filter submit. Combines the old mcmtcg + tcgseller scripts.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
@@ -30,7 +30,7 @@
 
   // Per-button style — small; placed one per column. The button helpers add a
   // coloured left-border direct-link indicator on top of this.
-  const BTN_STYLE = 'display:block;margin:3px auto 0;padding:1px 5px;font-size:9px;line-height:1.3;';
+  const BTN_STYLE = 'display:block;margin:5px auto 0;padding:2px 7px;font-size:10px;line-height:1.35;';
 
   // ----- Helper: open MCM + TCG + TCGA tabs using card data (direct links or search) -----
   async function openAllTabs(cardData) {
