@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Poromagia Store Manager — TCG Seller button (ID-based direct links)
 // @namespace    poroscripts
-// @version      1.2
+// @version      1.3
 // @description  Adds TCGA (TCGplayer Seller Admin) button using direct product ID links (updated: improved TCG ID matching). Automatic search skips NO CARD rows to find first valid card.
 // @match        https://poromagia.com/store_manager/pokemon/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
@@ -87,10 +87,18 @@
       const tcgSellerButton = await PoroSearch.createTcgSellerButton(cardData, {
         text: 'TCGA',
         className: 'pm-tcgseller-btn',
-        style: 'display:block;margin:2px;padding:2px;'
+        style: 'margin:0;padding:1px 5px;font-size:9px;line-height:1.3;'
       });
 
-      idCell.appendChild(tcgSellerButton);
+      // Shared horizontal row in the id cell (both store-manager scripts append here)
+      let btnBar = idCell.querySelector('.poro-id-btns');
+      if (!btnBar) {
+        btnBar = document.createElement('div');
+        btnBar.className = 'poro-id-btns';
+        btnBar.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;';
+        idCell.appendChild(btnBar);
+      }
+      btnBar.appendChild(tcgSellerButton);
       row._pmTcgSellerDone = true;
 
       // If we have a pending auto-search and haven't triggered it yet
