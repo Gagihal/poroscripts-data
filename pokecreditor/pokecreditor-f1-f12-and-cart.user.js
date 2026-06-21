@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Poromagia Pokemon Creditor — F1-F12 Quick Add & Cart Dock
 // @namespace    poroscripts
-// @version      1.0
-// @description  F1-F12 keys for quick-add, docked cart panel, smart filter splitting, F-key annotations, and column customization
+// @version      1.1
+// @description  F1-F12 quick-add, docked cart panel with a "Last card added" readout, smart filter splitting, F-key annotations, and column customization
 // @match        https://poromagia.com/pokemon_credit/*
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokecreditor/pokecreditor-f1-f12-and-cart.user.js
 // @downloadURL  https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokecreditor/pokecreditor-f1-f12-and-cart.user.js
@@ -173,4 +173,66 @@ if (thead) {
   const style = document.createElement('style');
   style.textContent = css;
   document.head.appendChild(style);
+})();
+
+
+// —————————————————————————
+// "Last card added" readout, pinned to the empty right side of the cart dock
+// —————————————————————————
+;(function(){
+  'use strict';
+  const KEY = 'poro_credit_last_added';
+
+  function ensureBox() {
+    let box = document.getElementById('poro-last-added');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'poro-last-added';
+      box.style.cssText = [
+        'position:fixed', 'right:24px', 'bottom:0', 'height:25vh',
+        'display:flex', 'align-items:center', 'justify-content:flex-end',
+        'text-align:right', 'max-width:60vw', 'z-index:10000',
+        'pointer-events:none', 'font-family:sans-serif', 'font-weight:800',
+        'font-size:28px', 'line-height:1.2', 'color:#222'
+      ].join(';');
+      document.body.appendChild(box);
+    }
+    return box;
+  }
+
+  function render() {
+    let data = null;
+    try { data = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+    const box = ensureBox();
+    if (!data) { box.textContent = ''; return; }
+    const amt = data.amount ? (' ×' + data.amount) : '';
+    box.textContent = 'Last card added: ' + [data.card, data.condition].filter(Boolean).join(' ') + amt;
+  }
+
+  function captureAdd(form) {
+    const val = (sel) => { const el = form.querySelector(sel); return el ? (el.value || '').trim() : ''; };
+    const name = val('input[name="name"]');
+    const condition = val('input[name="condition"]');
+    const amount = val('input[name="count"]');
+    const row = form.closest('tr');
+    const numCell = row && row.querySelector('td.collector_number');
+    const num = numCell ? (numCell.textContent || '').trim() : '';
+    const card = num ? (name + ' ' + num) : name;
+    try { localStorage.setItem(KEY, JSON.stringify({ card, condition, amount })); } catch (e) {}
+    render();
+  }
+
+  // Capture-phase submit: catches manual "Lisää koriin" clicks, F-key adds
+  // (btn.click → submit) and add-all (jQuery .submit() trigger). A credit add
+  // form is identified by its card + count inputs (excludes the filter form).
+  document.addEventListener('submit', function (e) {
+    const form = e.target;
+    if (form && form.querySelector &&
+        form.querySelector('input[name="card"]') &&
+        form.querySelector('input[name="count"]')) {
+      captureAdd(form);
+    }
+  }, true);
+
+  window.addEventListener('load', render);
 })();
