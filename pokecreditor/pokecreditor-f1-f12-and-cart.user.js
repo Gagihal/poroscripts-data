@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Poromagia Pokemon Creditor — F1-F12 Quick Add & Cart Dock
 // @namespace    poroscripts
-// @version      1.1
+// @version      1.2
 // @description  F1-F12 quick-add, docked cart panel with a "Last card added" readout, smart filter splitting, F-key annotations, and column customization
 // @match        https://poromagia.com/pokemon_credit/*
 // @updateURL    https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/pokecreditor/pokecreditor-f1-f12-and-cart.user.js
@@ -193,7 +193,7 @@ if (thead) {
         'display:flex', 'align-items:center', 'justify-content:flex-end',
         'text-align:right', 'max-width:60vw', 'z-index:10000',
         'pointer-events:none', 'font-family:sans-serif', 'font-weight:800',
-        'font-size:36px', 'line-height:1.2', 'color:#222'
+        'font-size:30px', 'line-height:1.2', 'color:#222'
       ].join(';');
       document.body.appendChild(box);
     }
