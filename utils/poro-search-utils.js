@@ -609,6 +609,216 @@
     return { tcgButton, mcmButton };
   }
 
+  // ============================================================
+  // PoroIds — id resolution behind one interface (swappable backend)
+  // ============================================================
+  // Today: static id map + cached reverse indexes (no per-row O(n) scan).
+  // Later: same interface can be backed by the live card-ids API.
+  let _revTs = -1, _mcmRev = null, _tcgRev = null;
+  async function _ensureRev() {
+    const map = await getIdMap();
+    if (_mcmRev && _revTs === _idMapTs) return;
+    _mcmRev = Object.create(null);
+    _tcgRev = Object.create(null);
+    for (const [poro, e] of Object.entries(map)) {
+      if (e.mcmId && !(e.mcmId in _mcmRev)) _mcmRev[e.mcmId] = poro;
+      if (e.tcgId && e.tcgId !== '0' && !(e.tcgId in _tcgRev)) _tcgRev[e.tcgId] = poro;
+    }
+    _revTs = _idMapTs;
+  }
+
+  let PARENTMAP_URL = 'https://raw.githubusercontent.com/gagihal/poroscripts-data/main/utils/parent-product-to-card.json';
+  const PARENT_LS_KEY = 'poro_parent_card_map';
+  const PARENT_LS_TS = 'poro_parent_card_map_ts';
+  const PARENT_CACHE_MS = 7 * 24 * 3600 * 1000;
+  let _parentMap = null, _parentTs = 0;
+  async function _getParentMap() {
+    if (_parentMap && Date.now() - _parentTs < PARENT_CACHE_MS) return _parentMap;
+    try {
+      const ts = parseInt(localStorage.getItem(PARENT_LS_TS) || '0', 10);
+      if (ts && Date.now() - ts < PARENT_CACHE_MS) {
+        const raw = localStorage.getItem(PARENT_LS_KEY);
+        if (raw) { _parentMap = JSON.parse(raw); _parentTs = Date.now(); return _parentMap; }
+      }
+    } catch {}
+    try {
+      const r = await fetch(PARENTMAP_URL, { mode: 'cors' });
+      if (r.ok) {
+        _parentMap = await r.json(); _parentTs = Date.now();
+        try {
+          localStorage.setItem(PARENT_LS_KEY, JSON.stringify(_parentMap));
+          localStorage.setItem(PARENT_LS_TS, String(Date.now()));
+        } catch {}
+      }
+    } catch (e) { console.warn('[PoroIds] parent map load failed:', e); }
+    return _parentMap || (_parentMap = {});
+  }
+
+  // kind: 'poro' (identity) | 'mcm' | 'tcg' | 'parent' -> Poro card id (string) or null
+  async function toPoro(kind, value) {
+    if (value == null || value === '') return null;
+    const v = String(value).trim();
+    if (kind === 'poro') return v;
+    if (kind === 'mcm') { await _ensureRev(); return _mcmRev[v] || null; }
+    if (kind === 'tcg') { await _ensureRev(); return _tcgRev[v] || null; }
+    if (kind === 'parent') { const m = await _getParentMap(); return m[v] || null; }
+    return null;
+  }
+  async function toPoroBatch(kind, values) {
+    const out = new Map();
+    if (kind === 'mcm' || kind === 'tcg') await _ensureRev();
+    else if (kind === 'parent') await _getParentMap();
+    for (const val of values) out.set(val, await toPoro(kind, val));
+    return out;
+  }
+
+  const PoroIds = {
+    toPoro, toPoroBatch,
+    setParentMapUrl(url) { if (url) PARENTMAP_URL = String(url); },
+  };
+
+  // ============================================================
+  // PoroButtons — declarative row-enhancer engine
+  // ============================================================
+  // A new spot = one enhance({items, card, buttons, place}) call.
+  const STYLES = {
+    inline: 'display:inline-block;margin:0 0 0 4px;padding:0 5px;font-size:10px;line-height:1.4;vertical-align:middle;',
+    pill:   'display:inline-block;font-size:10px;line-height:1.2;padding:2px 4px;margin-left:4px;border-radius:4px;border:1px solid #888;background:#1a1a1a;color:#fff;cursor:pointer;text-decoration:none;font-family:sans-serif;white-space:nowrap;',
+    block:  'display:block;margin:5px auto 0;padding:2px 7px;font-size:10px;line-height:1.35;',
+  };
+
+  // registry: kind -> {default label, factory returning Promise<HTMLElement>}
+  const LINKS = {
+    MCM:  { text: 'MCM',  make: (cd, o) => createMcmButton(cd, o) },
+    TCG:  { text: 'TCG',  make: (cd, o) => createTcgButton(cd, o) },
+    TCGA: { text: 'TCGA', make: (cd, o) => createTcgSellerButton(cd, o) },
+    PM:   { text: 'PM',   make: (cd, o) => Promise.resolve(createPmButton(cd, o)) },
+  };
+
+  function _normButtons(buttons) {
+    return (buttons || []).map((b) => {
+      if (typeof b === 'string') return { kind: b, text: (LINKS[b] || {}).text };
+      if (b && b.kind) return { kind: b.kind, text: b.text || (LINKS[b.kind] || {}).text };
+      const k = Object.keys(b)[0]; // shorthand {KIND:'text'}
+      return { kind: k, text: b[k] };
+    }).filter((d) => LINKS[d.kind]);
+  }
+
+  async function enhance(spec) {
+    const {
+      items, card, buttons, style = 'inline', place = {},
+      observe = true, spa = false, elementType = 'a',
+      once = 'poroBtns', bar: barOpts = {},
+    } = spec;
+    const single = items === 'self';
+    const styleCss = STYLES[style] || style || '';
+    const defs = _normButtons(buttons);
+
+    function getItems() {
+      if (single) return [document.body];
+      if (typeof items === 'function') return items() || [];
+      return Array.prototype.slice.call(document.querySelectorAll(items));
+    }
+
+    async function build(cd) {
+      const out = [];
+      for (const d of defs) {
+        const el = await LINKS[d.kind].make(cd, { text: d.text, style: styleCss, elementType });
+        out.push({ kind: d.kind, el });
+      }
+      return out;
+    }
+
+    function makeBar(built) {
+      const bar = document.createElement('span');
+      bar.className = 'poro-btn-bar';
+      bar.style.cssText = 'display:inline-flex;flex-wrap:wrap;align-items:center;gap:' +
+        (barOpts.gap || '4px') + ';' + (barOpts.style || '');
+      built.forEach((b) => bar.appendChild(b.el));
+      return bar;
+    }
+
+    function floatingBox() {
+      let box = document.getElementById('poro-floating-btns');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'poro-floating-btns';
+        const side = place.floating === 'bottom-left' ? 'left:16px' : 'right:16px';
+        box.style.cssText = 'position:fixed;bottom:16px;' + side + ';z-index:999999;' +
+          'background:rgba(20,22,28,0.96);border:1px solid #3a3f4b;border-radius:8px;' +
+          'padding:8px 10px;box-shadow:0 2px 10px rgba(0,0,0,.5);';
+        document.body.appendChild(box);
+      } else {
+        box.innerHTML = ''; // refresh on re-scan (single-item / SPA nav)
+      }
+      return box;
+    }
+
+    function placeButtons(item, built) {
+      if (typeof place === 'function') { place(item, makeBar(built), built); return; }
+      if (place.distribute) {
+        for (const { kind, el } of built) {
+          const sel = place.distribute[kind];
+          const target = sel && item.querySelector ? item.querySelector(sel) : null;
+          (target || item).appendChild(el);
+        }
+        return;
+      }
+      const bar = makeBar(built);
+      if (place.floating) { floatingBox().appendChild(bar); return; }
+      if (place.after && item.querySelector) {
+        const ref = item.querySelector(place.after);
+        if (ref && ref.parentNode) { ref.insertAdjacentElement('afterend', bar); return; }
+      }
+      const tgt = place.append && item.querySelector ? item.querySelector(place.append) : null;
+      (tgt || item).appendChild(bar);
+    }
+
+    async function enhanceItem(item) {
+      if (!single && item.dataset && item.dataset[once] === '1') return;
+      let info = null;
+      try { info = card(item); } catch (e) { info = null; }
+      if (!single && item.dataset) item.dataset[once] = '1';
+      if (!info) return;
+      const poroId = info.id ? await PoroIds.toPoro(info.id.kind, info.id.value) : null;
+      const cd = {
+        name: info.name || '', setFull: info.setFull || '',
+        number: info.number || '', cardId: poroId,
+      };
+      placeButtons(item, await build(cd));
+    }
+
+    async function scan() {
+      for (const el of getItems()) {
+        try { await enhanceItem(el); } catch (e) { console.warn('[PoroButtons]', e); }
+      }
+    }
+
+    scan();
+
+    if (observe) {
+      let t = null;
+      const target = (typeof observe === 'string') ? document.querySelector(observe) : document.body;
+      if (target) {
+        new MutationObserver(() => { clearTimeout(t); t = setTimeout(scan, 250); })
+          .observe(target, { childList: true, subtree: true });
+      }
+    }
+    if (spa) {
+      const fire = () => setTimeout(scan, 400);
+      ['pushState', 'replaceState'].forEach((m) => {
+        const o = history[m];
+        history[m] = function () { const r = o.apply(this, arguments); window.dispatchEvent(new Event('poro-loc')); return r; };
+      });
+      window.addEventListener('popstate', () => window.dispatchEvent(new Event('poro-loc')));
+      window.addEventListener('poro-loc', fire);
+      let last = location.href;
+      setInterval(() => { if (location.href !== last) { last = location.href; fire(); } }, 1000);
+    }
+  }
+
+  const PoroButtons = { enhance, LINKS, STYLES };
+
   // ---------- export ----------
   const api = {
     // utils
@@ -626,9 +836,11 @@
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '1.8.2'
+    version: '2.0.0'
   };
 
   root.PoroSearch = api;
+  root.PoroIds = PoroIds;
+  root.PoroButtons = PoroButtons;
 
 })(typeof unsafeWindow !== 'undefined' ? unsafeWindow : window);
