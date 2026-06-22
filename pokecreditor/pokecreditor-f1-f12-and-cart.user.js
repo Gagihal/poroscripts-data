@@ -189,11 +189,11 @@ if (thead) {
       box = document.createElement('div');
       box.id = 'poro-last-added';
       box.style.cssText = [
-        'position:fixed', 'right:24px', 'bottom:0', 'height:25vh',
+        'position:fixed', 'right:7vw', 'bottom:0', 'height:25vh',
         'display:flex', 'align-items:center', 'justify-content:flex-end',
         'text-align:right', 'max-width:60vw', 'z-index:10000',
         'pointer-events:none', 'font-family:sans-serif', 'font-weight:800',
-        'font-size:28px', 'line-height:1.2', 'color:#222'
+        'font-size:36px', 'line-height:1.2', 'color:#222'
       ].join(';');
       document.body.appendChild(box);
     }
