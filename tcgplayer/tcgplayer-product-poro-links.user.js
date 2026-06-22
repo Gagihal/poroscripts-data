@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TCGplayer → Poro Links (MCM / PM / TCGA floating box)
 // @namespace    poroscripts
-// @version      1.2
+// @version      1.3
 // @description  Floating corner box on TCGplayer single-card pages with buttons to the matching Cardmarket, Poromagia Store Manager and TCGplayer Seller Admin pages.
 // @match        https://www.tcgplayer.com/product/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
@@ -152,8 +152,8 @@
         const h1 = await waitForHeader();
         const { name, number, setFull } = parseProduct(h1);
 
-        // TCG ID is authoritative here → reverse-resolve to Poro/MCM
-        const poroId = await PoroSearch.getPoroIdFromTcg(tcgId);
+        // TCG ID is authoritative here → reverse-resolve to Poro/MCM (shared PoroIds resolver)
+        const poroId = await PoroIds.toPoro('tcg', tcgId);
         const mcmDirect = poroId ? await PoroSearch.buildMcmDirectUrl(poroId) : null;
 
         // MCM: direct product page if mapped, else search

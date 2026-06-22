@@ -698,7 +698,7 @@
   function _normButtons(buttons) {
     return (buttons || []).map((b) => {
       if (typeof b === 'string') return { kind: b, text: (LINKS[b] || {}).text };
-      if (b && b.kind) return { kind: b.kind, text: b.text || (LINKS[b.kind] || {}).text };
+      if (b && b.kind) return { kind: b.kind, text: b.text || (LINKS[b.kind] || {}).text, card: b.card };
       const k = Object.keys(b)[0]; // shorthand {KIND:'text'}
       return { kind: k, text: b[k] };
     }).filter((d) => LINKS[d.kind]);
@@ -720,9 +720,10 @@
       return Array.prototype.slice.call(document.querySelectorAll(items));
     }
 
-    async function build(cd) {
+    async function build(baseCd) {
       const out = [];
       for (const d of defs) {
+        const cd = d.card ? d.card(baseCd) : baseCd; // optional per-button cardData transform
         const el = await LINKS[d.kind].make(cd, { text: d.text, style: styleCss, elementType });
         out.push({ kind: d.kind, el });
       }
@@ -781,10 +782,8 @@
       if (!single && item.dataset) item.dataset[once] = '1';
       if (!info) return;
       const poroId = info.id ? await PoroIds.toPoro(info.id.kind, info.id.value) : null;
-      const cd = {
-        name: info.name || '', setFull: info.setFull || '',
-        number: info.number || '', cardId: poroId,
-      };
+      const cd = Object.assign({}, info, { cardId: poroId }); // keep name/setFull/number + any extras
+      delete cd.id;
       placeButtons(item, await build(cd));
     }
 
@@ -836,7 +835,7 @@
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '2.0.0'
+    version: '2.0.1'
   };
 
   root.PoroSearch = api;
