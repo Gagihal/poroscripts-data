@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Poromagia Pokémon Credit list — TCG/TCGA buttons
 // @namespace    poroscripts
-// @version      2.0
+// @version      2.1
 // @description  Adds compact T / A buttons (TCGplayer + Seller Admin) inline after each card name on the Pokémon credit (buylist) page. The name itself already links to Cardmarket. Built on the shared PoroButtons engine.
 // @match        https://poromagia.com/*pokemon_credit*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js

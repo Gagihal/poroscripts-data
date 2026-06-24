@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Poromagia Basket → TCG / TCGA / MCM buttons
 // @namespace    poroscripts
-// @version      2.0
+// @version      2.1
 // @description  Adds TCG (TCGplayer product), TCGA (Seller Admin) and MCM (Cardmarket) buttons to each card row in the poromagia.com basket. Built on the shared PoroButtons engine ('parent' product id resolution).
 // @match        https://poromagia.com/*/basket/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pokemon Creditor list — T/M/A buttons
 // @namespace    poroscripts
-// @version      3.0
+// @version      3.1
 // @description  Adds compact T (TCGplayer) / M (MCM) / A (TCGplayer Seller Admin) buttons after the Condition column on the admin creditor list. Built on the shared PoroButtons engine (combines the old T/M + A scripts).
 // @match        https://poromagia.com/*/admin/pokemon/creditorderitem/*
 // @require      https://raw.githubusercontent.com/Gagihal/poroscripts-data/main/utils/poro-search-utils.js
