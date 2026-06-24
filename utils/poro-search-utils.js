@@ -1,4 +1,4 @@
-// poro-search-utils.js  v1.8.2
+// poro-search-utils.js  v2.1.0
 ;(function (root) {
   'use strict';
 
@@ -237,29 +237,132 @@
     }
   }
 
+  // ---------- live card-ids API (primary; static map is the fallback) ----------
+  // The server endpoint resolves TCG/MCM ids through the authoritative
+  // TCGPlayerCSVData linkage, which is variant-aware: shadowless / reverse-holo /
+  // 1st-edition cards get their own TCG product id, unlike the static map (built
+  // from set+number, so it collapses variants onto the base card).
+  // Reachable only same-origin on poromagia.com with a staff session cookie; on
+  // any other origin / when logged out the fetch fails and we transparently fall
+  // back to the static id map below.
+  let CARDIDS_API = 'https://poromagia.com/api/v1/internal/pokemon/card-ids/';
+  let _apiDisabled = false;            // flips true after the first hard failure
+  const _apiPoro = new Map();          // poroId(str) -> {mcmId,tcgId} | null (not found)
+  const _apiRev  = new Map();          // 'mcm:123' / 'tcg:123' -> poroId(str) | null
+
+  function _absorb(rows) {
+    for (const row of rows) {
+      _apiPoro.set(String(row.poro_id), {
+        mcmId: row.mcm_id != null ? String(row.mcm_id) : null,
+        tcgId: row.tcg_id != null ? String(row.tcg_id) : null,
+      });
+    }
+  }
+
+  async function _apiGet(qs) {
+    // returns an array of result rows, or null if the API is unusable here
+    if (_apiDisabled) return null;
+    try {
+      const r = await fetch(CARDIDS_API + '?' + qs,
+        { credentials: 'include', headers: { Accept: 'application/json' } });
+      if (!r.ok) { _apiDisabled = true; return null; }   // 401/403/404/5xx
+      return (await r.json()).results || [];
+    } catch (e) {
+      _apiDisabled = true;             // cross-origin / network -> use static map
+      return null;
+    }
+  }
+
   /**
-   * Get MCM product ID from PoroId.
+   * Warm the live cache for many poro ids in one (chunked) batched call, so that
+   * subsequent per-row getTcgId/getMcmId calls are cache hits. No-op off-origin.
+   * @param {Array<string|number>} poroIds
+   */
+  async function preloadCardIds(poroIds) {
+    if (_apiDisabled) return;
+    const ids = Array.from(new Set((poroIds || []).map(String)))
+      .filter((id) => /^\d+$/.test(id) && id !== '0' && !_apiPoro.has(id));
+    for (let i = 0; i < ids.length; i += 100) {
+      const chunk = ids.slice(i, i + 100);
+      const rows = await _apiGet('poro_id=' + chunk.join(','));
+      if (rows == null) return;        // disabled mid-way; leave the rest to fallback
+      _absorb(rows);
+      const seen = new Set(rows.map((x) => String(x.poro_id)));
+      for (const id of chunk) if (!seen.has(id)) _apiPoro.set(id, null);
+    }
+  }
+
+  // Single-id forward lookup with same-tick coalescing into one batched call.
+  let _fwQ = new Map(), _fwTimer = null;
+  function _liveForward(poroId) {
+    const id = String(poroId);
+    if (_apiDisabled) return Promise.resolve(undefined);   // unknown -> use fallback
+    if (_apiPoro.has(id)) return Promise.resolve(_apiPoro.get(id));
+    return new Promise((resolve) => {
+      if (!_fwQ.has(id)) _fwQ.set(id, []);
+      _fwQ.get(id).push(resolve);
+      if (!_fwTimer) _fwTimer = setTimeout(_flushForward, 10);
+    });
+  }
+  async function _flushForward() {
+    _fwTimer = null;
+    const q = _fwQ; _fwQ = new Map();
+    const ids = Array.from(q.keys());
+    for (let i = 0; i < ids.length; i += 100) {
+      const chunk = ids.slice(i, i + 100);
+      const rows = await _apiGet('poro_id=' + chunk.join(','));
+      if (rows == null) {              // API unusable -> resolve undefined (fallback)
+        for (const id of chunk) (q.get(id) || []).forEach((fn) => fn(undefined));
+        continue;
+      }
+      _absorb(rows);
+      const seen = new Set(rows.map((x) => String(x.poro_id)));
+      for (const id of chunk) {
+        if (!seen.has(id)) _apiPoro.set(id, null);
+        (q.get(id) || []).forEach((fn) => fn(_apiPoro.get(id)));
+      }
+    }
+  }
+
+  // Reverse lookup (mcm/tcg id -> poro id). Returns poroId | null (no match) |
+  // undefined (API unusable -> caller should use the static reverse index).
+  async function _liveReverse(kind, value) {
+    const key = kind + ':' + value;
+    if (_apiRev.has(key)) return _apiRev.get(key);
+    const rows = await _apiGet(kind + '_id=' + encodeURIComponent(value));
+    if (rows == null) return undefined;
+    _absorb(rows);
+    const poro = rows.length ? String(rows[0].poro_id) : null;
+    _apiRev.set(key, poro);
+    return poro;
+  }
+
+  function setCardIdsApi(url) { if (url) CARDIDS_API = String(url); }
+
+  /**
+   * Get MCM product ID from PoroId (live API first, static map fallback).
    * @param {string|number} poroId
    * @returns {Promise<string|null>} MCM product ID or null if not found
    */
   async function getMcmId(poroId) {
+    const live = await _liveForward(poroId);
+    if (live && live.mcmId) return live.mcmId;   // authoritative
     const map = await getIdMap();
-    const entry = map[String(poroId)];
-    const result = entry?.mcmId || null;
-    console.log('[PoroSearch] getMcmId lookup:', { poroId, mapSize: Object.keys(map).length, result });
-    return result;
+    return map[String(poroId)]?.mcmId || null;
   }
 
   /**
-   * Get TCGplayer product ID from PoroId.
+   * Get TCGplayer product ID from PoroId (live API first, static map fallback).
+   * The live API is variant-aware, so shadowless / reverse-holo / 1st-edition
+   * cards resolve to their own TCG product instead of the base card.
    * @param {string|number} poroId
    * @returns {Promise<string|null>} TCGplayer product ID or null if not found
    */
   async function getTcgId(poroId) {
+    const live = await _liveForward(poroId);
+    if (live && live.tcgId) return live.tcgId;   // authoritative (variant-correct)
     const map = await getIdMap();
-    const entry = map[String(poroId)];
-    const result = entry?.tcgId || null;
-    return result;
+    return map[String(poroId)]?.tcgId || null;
   }
 
   /**
@@ -612,8 +715,8 @@
   // ============================================================
   // PoroIds — id resolution behind one interface (swappable backend)
   // ============================================================
-  // Today: static id map + cached reverse indexes (no per-row O(n) scan).
-  // Later: same interface can be backed by the live card-ids API.
+  // Backed by the live card-ids API (variant-aware) on poromagia.com, with the
+  // static id map + cached reverse indexes as the off-origin / logged-out fallback.
   let _revTs = -1, _mcmRev = null, _tcgRev = null;
   async function _ensureRev() {
     const map = await getIdMap();
@@ -659,8 +762,12 @@
     if (value == null || value === '') return null;
     const v = String(value).trim();
     if (kind === 'poro') return v;
-    if (kind === 'mcm') { await _ensureRev(); return _mcmRev[v] || null; }
-    if (kind === 'tcg') { await _ensureRev(); return _tcgRev[v] || null; }
+    if (kind === 'mcm' || kind === 'tcg') {
+      const live = await _liveReverse(kind, v);     // live API first (variant-aware)
+      if (live) return live;
+      await _ensureRev();                            // undefined/null -> static fallback
+      return (kind === 'mcm' ? _mcmRev[v] : _tcgRev[v]) || null;
+    }
     if (kind === 'parent') { const m = await _getParentMap(); return m[v] || null; }
     return null;
   }
@@ -788,7 +895,22 @@
     }
 
     async function scan() {
-      for (const el of getItems()) {
+      const els = getItems();
+      // Warm the live id cache for all not-yet-enhanced poro-keyed rows in one
+      // batched call, so each per-row lookup below is a (variant-correct) cache hit.
+      try {
+        const poroVals = [];
+        for (const el of els) {
+          if (!single && el.dataset && el.dataset[once] === '1') continue;
+          let info = null;
+          try { info = card(el); } catch (e) { info = null; }
+          if (info && info.id && info.id.kind === 'poro' && info.id.value) {
+            poroVals.push(String(info.id.value));
+          }
+        }
+        if (poroVals.length) await preloadCardIds(poroVals);
+      } catch (e) { /* fall back to per-row lookups */ }
+      for (const el of els) {
         try { await enhanceItem(el); } catch (e) { console.warn('[PoroButtons]', e); }
       }
     }
@@ -830,12 +952,14 @@
     getMcmId, getTcgId, buildMcmDirectUrl, buildTcgDirectUrl,
     getPoroIdFromMcm, getTcgIdFromMcm, getPoroIdFromTcg, getMcmIdFromTcg,
     preloadIdMap, setIdMapUrl,
+    // live card-ids API (v2.1.0): variant-aware primary source, static map fallback
+    preloadCardIds, setCardIdsApi,
     // button creation (v1.4.0: initial, v1.5.0: TCG direct links, v1.6.0: PM button, v1.7.2: removed fallback alert, v1.7.3: elementType support, v1.8.0: TCG Seller button)
     createTcgButton, createMcmButton, createTcgSellerButton, createPmButton, createSearchButtons,
     // cache/admin
     preloadAbbrMap, setAbbrMap, setMapUrl,
     // meta
-    version: '2.0.1'
+    version: '2.1.0'
   };
 
   root.PoroSearch = api;
